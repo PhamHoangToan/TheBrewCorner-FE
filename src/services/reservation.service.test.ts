@@ -35,10 +35,16 @@ describe('reservationService', () => {
   })
 
   describe('confirm', () => {
-    it('gọi PATCH /reservations/:id/confirm', async () => {
+    it('gọi PATCH /reservations/:id/confirm không kèm tableId nếu không chọn bàn', async () => {
       mockPatch.mockResolvedValue({ data: {} })
       await reservationService.confirm('res-1')
-      expect(mockPatch).toHaveBeenCalledWith('/reservations/res-1/confirm')
+      expect(mockPatch).toHaveBeenCalledWith('/reservations/res-1/confirm', { tableId: undefined })
+    })
+
+    it('gọi PATCH /reservations/:id/confirm kèm tableId đã chọn', async () => {
+      mockPatch.mockResolvedValue({ data: {} })
+      await reservationService.confirm('res-1', 'table-2')
+      expect(mockPatch).toHaveBeenCalledWith('/reservations/res-1/confirm', { tableId: 'table-2' })
     })
   })
 
