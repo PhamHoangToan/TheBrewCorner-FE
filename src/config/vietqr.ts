@@ -1,5 +1,5 @@
-const BANK_ID      = 'TPB'
-const ACCOUNT_NO   = '0387646729'
+const BANK_ID      = 'ACB'
+const ACCOUNT_NO   = '24193377'
 const ACCOUNT_NAME = 'PHAM HOANG TOAN'
 const TEMPLATE     = 'compact2'
 

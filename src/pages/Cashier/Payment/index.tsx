@@ -390,7 +390,7 @@ const CashierPayment: React.FC = () => {
                       className={styles.qrPanelImage}
                     />
                     <div className={styles.qrPanelInfo}>
-                      <div className={styles.qrPanelBank}>TPBank</div>
+                      <div className={styles.qrPanelBank}>ACB</div>
                       <div className={styles.qrPanelField}>
                         <span className={styles.qrPanelLabel}>Số tài khoản</span>
                         <span className={styles.qrPanelValue}>
