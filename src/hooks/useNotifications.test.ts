@@ -1,5 +1,10 @@
+import { createElement, type ReactNode } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
+
+// useNotifications() calls useNavigate() internally, which requires a Router context.
+const Wrapper = ({ children }: { children: ReactNode }) => createElement(MemoryRouter, null, children)
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -79,7 +84,7 @@ describe('useNotifications', () => {
       data: { count: 2 },
     })
 
-    const { result } = renderHook(() => useNotifications())
+    const { result } = renderHook(() => useNotifications(), { wrapper: Wrapper })
 
     await waitFor(() => {
       expect(result.current.notifications).toHaveLength(1)
@@ -90,7 +95,7 @@ describe('useNotifications', () => {
   // ── socket event: ORDER_NEW ────────────────────────────────────────────────
 
   it('ORDER_NEW — prepends notification and increments unreadCount', async () => {
-    const { result } = renderHook(() => useNotifications())
+    const { result } = renderHook(() => useNotifications(), { wrapper: Wrapper })
     await waitFor(() => expect(notificationService.getAll).toHaveBeenCalled())
 
     const notif = makeNotif({ type: 'ORDER_NEW' })
@@ -106,7 +111,7 @@ describe('useNotifications', () => {
     const openMock = vi.fn()
     ;(App.useApp as ReturnType<typeof vi.fn>).mockReturnValue({ notification: { open: openMock } })
 
-    renderHook(() => useNotifications())
+    renderHook(() => useNotifications(), { wrapper: Wrapper })
     await waitFor(() => expect(notificationService.getAll).toHaveBeenCalled())
 
     act(() => {
@@ -126,7 +131,7 @@ describe('useNotifications', () => {
     const openMock = vi.fn()
     ;(App.useApp as ReturnType<typeof vi.fn>).mockReturnValue({ notification: { open: openMock } })
 
-    renderHook(() => useNotifications())
+    renderHook(() => useNotifications(), { wrapper: Wrapper })
     await waitFor(() => expect(notificationService.getAll).toHaveBeenCalled())
 
     act(() => {
@@ -143,7 +148,7 @@ describe('useNotifications', () => {
   // ── socket event: ITEM_SERVED ─────────────────────────────────────────────
 
   it('ITEM_SERVED — prepends to notifications', async () => {
-    const { result } = renderHook(() => useNotifications())
+    const { result } = renderHook(() => useNotifications(), { wrapper: Wrapper })
     await waitFor(() => expect(notificationService.getAll).toHaveBeenCalled())
 
     act(() => {
@@ -158,7 +163,7 @@ describe('useNotifications', () => {
   // ── socket event: RETURN_REQUEST ──────────────────────────────────────────
 
   it('RETURN_REQUEST — increments unreadCount', async () => {
-    const { result } = renderHook(() => useNotifications())
+    const { result } = renderHook(() => useNotifications(), { wrapper: Wrapper })
     await waitFor(() => expect(notificationService.getAll).toHaveBeenCalled())
 
     act(() => {
@@ -173,7 +178,7 @@ describe('useNotifications', () => {
   // ── socket event: role mismatch ───────────────────────────────────────────
 
   it('ignores notifications for a different role', async () => {
-    const { result } = renderHook(() => useNotifications())
+    const { result } = renderHook(() => useNotifications(), { wrapper: Wrapper })
     await waitFor(() => expect(notificationService.getAll).toHaveBeenCalled())
 
     act(() => {
@@ -198,7 +203,7 @@ describe('useNotifications', () => {
     })
     ;(notificationService.markRead as ReturnType<typeof vi.fn>).mockResolvedValue({})
 
-    const { result } = renderHook(() => useNotifications())
+    const { result } = renderHook(() => useNotifications(), { wrapper: Wrapper })
     await waitFor(() => expect(result.current.notifications).toHaveLength(1))
 
     await act(async () => { await result.current.markRead('n1') })
@@ -218,7 +223,7 @@ describe('useNotifications', () => {
       data: { count: 2 },
     })
 
-    const { result } = renderHook(() => useNotifications())
+    const { result } = renderHook(() => useNotifications(), { wrapper: Wrapper })
     await waitFor(() => expect(result.current.unreadCount).toBe(2))
 
     await act(async () => { await result.current.markAllRead() })
@@ -237,7 +242,7 @@ describe('useNotifications', () => {
       .mockResolvedValueOnce({ data: { items: page2, total: 3 } })
     ;(notificationService.getUnreadCount as ReturnType<typeof vi.fn>).mockResolvedValue({ data: { count: 0 } })
 
-    const { result } = renderHook(() => useNotifications())
+    const { result } = renderHook(() => useNotifications(), { wrapper: Wrapper })
     await waitFor(() => expect(result.current.notifications).toHaveLength(2))
 
     await act(async () => { await result.current.loadMore() })
@@ -249,7 +254,7 @@ describe('useNotifications', () => {
   // ── RETURN_APPROVED / RETURN_REJECTED ─────────────────────────────────────
 
   it('RETURN_APPROVED — adds to notifications list', async () => {
-    const { result } = renderHook(() => useNotifications())
+    const { result } = renderHook(() => useNotifications(), { wrapper: Wrapper })
     await waitFor(() => expect(notificationService.getAll).toHaveBeenCalled())
 
     act(() => {
@@ -262,7 +267,7 @@ describe('useNotifications', () => {
   })
 
   it('RETURN_REJECTED — adds to notifications list', async () => {
-    const { result } = renderHook(() => useNotifications())
+    const { result } = renderHook(() => useNotifications(), { wrapper: Wrapper })
     await waitFor(() => expect(notificationService.getAll).toHaveBeenCalled())
 
     act(() => {
@@ -280,7 +285,7 @@ describe('useNotifications', () => {
     const openMock = vi.fn()
     ;(App.useApp as ReturnType<typeof vi.fn>).mockReturnValue({ notification: { open: openMock } })
 
-    renderHook(() => useNotifications())
+    renderHook(() => useNotifications(), { wrapper: Wrapper })
     await waitFor(() => expect(notificationService.getAll).toHaveBeenCalled())
 
     act(() => {

@@ -48,12 +48,12 @@ const ROLE_CHIP: Record<StaffRole, { bg: string; fg: string }> = {
 }
 
 const MOCK_DATA: StaffRow[] = [
-  { key: '1', manv: 'NV001', hoten: 'Võ Thị Thùy Hoa',    vaitro: 'admin',   calamviec: 'Ca 1 (6h-14h)',  lienhe: '0901234567', trangthai: 'Đang làm' },
-  { key: '2', manv: 'NV002', hoten: 'Nguyễn Thị Tú Trinh', vaitro: 'cashier', calamviec: 'Ca 1 (6h-14h)',  lienhe: '0901234568', trangthai: 'Đang làm' },
-  { key: '3', manv: 'NV003', hoten: 'Trần Quang Minh',      vaitro: 'waiter',  calamviec: 'Ca 2 (14h-22h)', lienhe: '0901234569', trangthai: 'Đang làm' },
-  { key: '4', manv: 'NV004', hoten: 'Võ Minh Tuấn',         vaitro: 'barista', calamviec: 'Ca 1 (6h-14h)',  lienhe: '0901234570', trangthai: 'Đang làm' },
-  { key: '5', manv: 'NV005', hoten: 'Nguyễn Thị Lan',       vaitro: 'waiter',  calamviec: 'Ca 2 (14h-22h)', lienhe: '0901234571', trangthai: 'Nghỉ phép' },
-  { key: '6', manv: 'NV006', hoten: 'Lê Văn Tú',            vaitro: 'cashier', calamviec: 'Ca 2 (14h-22h)', lienhe: '0901234572', trangthai: 'Đang làm' },
+  { key: '1', manv: 'NV001', hoten: 'Võ Thị Thùy Hoa',    vaitro: 'admin',   calamviec: 'Ca 1 (6h-14h)',  lienhe: '0901234567', email: 'nv001@thebrewcorner.local', trangthai: 'Đang làm' },
+  { key: '2', manv: 'NV002', hoten: 'Nguyễn Thị Tú Trinh', vaitro: 'cashier', calamviec: 'Ca 1 (6h-14h)',  lienhe: '0901234568', email: 'nv002@thebrewcorner.local', trangthai: 'Đang làm' },
+  { key: '3', manv: 'NV003', hoten: 'Trần Quang Minh',      vaitro: 'waiter',  calamviec: 'Ca 2 (14h-22h)', lienhe: '0901234569', email: 'nv003@thebrewcorner.local', trangthai: 'Đang làm' },
+  { key: '4', manv: 'NV004', hoten: 'Võ Minh Tuấn',         vaitro: 'barista', calamviec: 'Ca 1 (6h-14h)',  lienhe: '0901234570', email: 'nv004@thebrewcorner.local', trangthai: 'Đang làm' },
+  { key: '5', manv: 'NV005', hoten: 'Nguyễn Thị Lan',       vaitro: 'waiter',  calamviec: 'Ca 2 (14h-22h)', lienhe: '0901234571', email: 'nv005@thebrewcorner.local', trangthai: 'Nghỉ phép' },
+  { key: '6', manv: 'NV006', hoten: 'Lê Văn Tú',            vaitro: 'cashier', calamviec: 'Ca 2 (14h-22h)', lienhe: '0901234572', email: 'nv006@thebrewcorner.local', trangthai: 'Đang làm' },
 ]
 
 const mapItem = (item: any, idx: number): StaffRow => ({

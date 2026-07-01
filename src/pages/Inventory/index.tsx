@@ -20,11 +20,11 @@ interface Ingredient {
 }
 
 const MOCK_DATA: Ingredient[] = [
-  { key: '1', ma: 'NVL001', ten: 'Cà phê Arabica', donVi: 'kg',   tonKho: 12, canhBao: 5, trangThai: 'Đủ hàng' },
-  { key: '2', ma: 'NVL002', ten: 'Sữa tươi',        donVi: 'lít', tonKho: 3,  canhBao: 5, trangThai: 'Sắp hết' },
-  { key: '3', ma: 'NVL003', ten: 'Đường trắng',      donVi: 'kg',  tonKho: 8,  canhBao: 3, trangThai: 'Đủ hàng' },
-  { key: '4', ma: 'NVL004', ten: 'Trà xanh matcha',  donVi: 'kg',  tonKho: 0,  canhBao: 2, trangThai: 'Hết hàng' },
-  { key: '5', ma: 'NVL005', ten: 'Kem tươi',         donVi: 'lít', tonKho: 2,  canhBao: 4, trangThai: 'Sắp hết' },
+  { key: '1', ma: 'NVL001', ten: 'Cà phê Arabica', donVi: 'kg',   usagePerUnit: 1000, tonKho: 12, canhBao: 5, trangThai: 'Đủ hàng' },
+  { key: '2', ma: 'NVL002', ten: 'Sữa tươi',        donVi: 'lít', usagePerUnit: 1000, tonKho: 3,  canhBao: 5, trangThai: 'Sắp hết' },
+  { key: '3', ma: 'NVL003', ten: 'Đường trắng',      donVi: 'kg',  usagePerUnit: 1000, tonKho: 8,  canhBao: 3, trangThai: 'Đủ hàng' },
+  { key: '4', ma: 'NVL004', ten: 'Trà xanh matcha',  donVi: 'kg',  usagePerUnit: 1000, tonKho: 0,  canhBao: 2, trangThai: 'Hết hàng' },
+  { key: '5', ma: 'NVL005', ten: 'Kem tươi',         donVi: 'lít', usagePerUnit: 1000, tonKho: 2,  canhBao: 4, trangThai: 'Sắp hết' },
 ]
 
 const STATUS_COLOR: Record<string, string> = { 'Đủ hàng': 'green', 'Sắp hết': 'orange', 'Hết hàng': 'red' }

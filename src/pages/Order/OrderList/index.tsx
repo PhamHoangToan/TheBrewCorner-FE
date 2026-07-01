@@ -32,16 +32,16 @@ interface TableOption {
 }
 
 const FALLBACK_PRODUCTS: Product[] = [
-  { id: 'p1', name: 'Black Coffee',      price: 35000, category: 'Coffee', emoji: '☕' },
-  { id: 'p2', name: 'Cafe Latte',         price: 45000, category: 'Coffee', emoji: '☕' },
-  { id: 'p3', name: 'Cappuccino',         price: 45000, category: 'Coffee', emoji: '☕' },
-  { id: 'p4', name: 'Flat White',         price: 50000, category: 'Coffee', emoji: '☕' },
-  { id: 'p5', name: 'Irish Coffee',       price: 55000, category: 'Coffee', emoji: '☕' },
-  { id: 'p6', name: 'Trà Xanh Đậu Đỏ',   price: 40000, category: 'Trà',    emoji: '🍵' },
-  { id: 'p7', name: 'Trà Thạch Đào',      price: 40000, category: 'Trà',    emoji: '🍵' },
-  { id: 'p8', name: 'Tiramisu',           price: 55000, category: 'Bánh',   emoji: '🎂' },
-  { id: 'p9', name: 'Mousse Cacao',       price: 50000, category: 'Bánh',   emoji: '🍫' },
-  { id: 'p10', name: 'Phô Mai Trà Xanh', price: 50000, category: 'Bánh',   emoji: '🧁' },
+  { id: 'p1', name: 'Black Coffee',      price: 35000, category: 'Coffee', emoji: '☕', ingredients: [] },
+  { id: 'p2', name: 'Cafe Latte',         price: 45000, category: 'Coffee', emoji: '☕', ingredients: [] },
+  { id: 'p3', name: 'Cappuccino',         price: 45000, category: 'Coffee', emoji: '☕', ingredients: [] },
+  { id: 'p4', name: 'Flat White',         price: 50000, category: 'Coffee', emoji: '☕', ingredients: [] },
+  { id: 'p5', name: 'Irish Coffee',       price: 55000, category: 'Coffee', emoji: '☕', ingredients: [] },
+  { id: 'p6', name: 'Trà Xanh Đậu Đỏ',   price: 40000, category: 'Trà',    emoji: '🍵', ingredients: [] },
+  { id: 'p7', name: 'Trà Thạch Đào',      price: 40000, category: 'Trà',    emoji: '🍵', ingredients: [] },
+  { id: 'p8', name: 'Tiramisu',           price: 55000, category: 'Bánh',   emoji: '🎂', ingredients: [] },
+  { id: 'p9', name: 'Mousse Cacao',       price: 50000, category: 'Bánh',   emoji: '🍫', ingredients: [] },
+  { id: 'p10', name: 'Phô Mai Trà Xanh', price: 50000, category: 'Bánh',   emoji: '🧁', ingredients: [] },
 ]
 
 const FALLBACK_TABLES: TableOption[] = [

@@ -218,7 +218,7 @@ const Dashboard: React.FC = () => {
                     <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(v: number, name: string) => [v + ' bàn', name]} />
+                <Tooltip formatter={(v, name) => [`${v} bàn`, name]} />
               </PieChart>
             </ResponsiveContainer>
             <div className={styles.pieLegend}>
@@ -262,7 +262,7 @@ const Dashboard: React.FC = () => {
                     axisLine={false}
                     tickLine={false}
                   />
-                  <Tooltip formatter={(v: number) => [v + ' ly/phần', 'Đã bán']} />
+                  <Tooltip formatter={(v) => [`${v} ly/phần`, 'Đã bán']} />
                   <Bar dataKey="qty" fill="#662c21" radius={[0, 6, 6, 0]} maxBarSize={28} />
                 </BarChart>
               </ResponsiveContainer>

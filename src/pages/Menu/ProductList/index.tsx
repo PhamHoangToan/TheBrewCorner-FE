@@ -25,18 +25,18 @@ interface Product {
 }
 
 const MOCK_DATA: Product[] = [
-  { key: '1',  loaimon: 'Đồ uống', mamon: 'U01', tenmon: 'Cappuccino',       nhomthucdon: 'Coffe', donvitinh: 'Ly',    gia: 65000 },
-  { key: '2',  loaimon: 'Đồ uống', mamon: 'U02', tenmon: 'Cafe Latte',        nhomthucdon: 'Coffe', donvitinh: 'Ly',    gia: 65000 },
-  { key: '3',  loaimon: 'Đồ uống', mamon: 'U03', tenmon: 'Espresso',          nhomthucdon: 'Coffe', donvitinh: 'Ly',    gia: 39000 },
-  { key: '4',  loaimon: 'Đồ uống', mamon: 'U04', tenmon: 'Trà Thạch Đào',    nhomthucdon: 'Trà',   donvitinh: 'Ly',    gia: 39000 },
-  { key: '5',  loaimon: 'Đồ uống', mamon: 'U05', tenmon: 'Trà Thạch Vải',    nhomthucdon: 'Trà',   donvitinh: 'Ly',    gia: 39000 },
-  { key: '6',  loaimon: 'Đồ uống', mamon: 'U06', tenmon: 'Black Coffee',      nhomthucdon: 'Coffe', donvitinh: 'Ly',    gia: 25000 },
-  { key: '7',  loaimon: 'Đồ uống', mamon: 'U07', tenmon: 'Flat White',        nhomthucdon: 'Coffe', donvitinh: 'Ly',    gia: 45000 },
-  { key: '8',  loaimon: 'Đồ uống', mamon: 'U08', tenmon: 'Irish Coffee',      nhomthucdon: 'Coffe', donvitinh: 'Ly',    gia: 50000 },
-  { key: '9',  loaimon: 'Đồ ăn',   mamon: 'A01', tenmon: 'Tiramisu',          nhomthucdon: 'Bánh',  donvitinh: 'Phần', gia: 30000 },
-  { key: '10', loaimon: 'Đồ ăn',   mamon: 'A02', tenmon: 'Phô Mai Trà Xanh', nhomthucdon: 'Bánh',  donvitinh: 'Phần', gia: 29000 },
-  { key: '11', loaimon: 'Đồ ăn',   mamon: 'A03', tenmon: 'Mousse Cacao',      nhomthucdon: 'Bánh',  donvitinh: 'Phần', gia: 29000 },
-  { key: '12', loaimon: 'Đồ ăn',   mamon: 'A04', tenmon: 'Phô Mai Caramel',   nhomthucdon: 'Bánh',  donvitinh: 'Phần', gia: 29000 },
+  { key: '1',  loaimon: 'Đồ uống', tenmon: 'Cappuccino',       nhomthucdon: 'Coffe', donvitinh: 'Ly',    gia: 65000, ingredients: [] },
+  { key: '2',  loaimon: 'Đồ uống', tenmon: 'Cafe Latte',        nhomthucdon: 'Coffe', donvitinh: 'Ly',    gia: 65000, ingredients: [] },
+  { key: '3',  loaimon: 'Đồ uống', tenmon: 'Espresso',          nhomthucdon: 'Coffe', donvitinh: 'Ly',    gia: 39000, ingredients: [] },
+  { key: '4',  loaimon: 'Đồ uống', tenmon: 'Trà Thạch Đào',    nhomthucdon: 'Trà',   donvitinh: 'Ly',    gia: 39000, ingredients: [] },
+  { key: '5',  loaimon: 'Đồ uống', tenmon: 'Trà Thạch Vải',    nhomthucdon: 'Trà',   donvitinh: 'Ly',    gia: 39000, ingredients: [] },
+  { key: '6',  loaimon: 'Đồ uống', tenmon: 'Black Coffee',      nhomthucdon: 'Coffe', donvitinh: 'Ly',    gia: 25000, ingredients: [] },
+  { key: '7',  loaimon: 'Đồ uống', tenmon: 'Flat White',        nhomthucdon: 'Coffe', donvitinh: 'Ly',    gia: 45000, ingredients: [] },
+  { key: '8',  loaimon: 'Đồ uống', tenmon: 'Irish Coffee',      nhomthucdon: 'Coffe', donvitinh: 'Ly',    gia: 50000, ingredients: [] },
+  { key: '9',  loaimon: 'Đồ ăn',   tenmon: 'Tiramisu',          nhomthucdon: 'Bánh',  donvitinh: 'Phần', gia: 30000, ingredients: [] },
+  { key: '10', loaimon: 'Đồ ăn',   tenmon: 'Phô Mai Trà Xanh', nhomthucdon: 'Bánh',  donvitinh: 'Phần', gia: 29000, ingredients: [] },
+  { key: '11', loaimon: 'Đồ ăn',   tenmon: 'Mousse Cacao',      nhomthucdon: 'Bánh',  donvitinh: 'Phần', gia: 29000, ingredients: [] },
+  { key: '12', loaimon: 'Đồ ăn',   tenmon: 'Phô Mai Caramel',   nhomthucdon: 'Bánh',  donvitinh: 'Phần', gia: 29000, ingredients: [] },
 ]
 
 const mapItem = (item: any, idx: number): Product => ({

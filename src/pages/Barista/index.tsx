@@ -105,13 +105,6 @@ const BaristaHome: React.FC = () => {
     } catch { message.error('Cập nhật thất bại') }
   }
 
-  const serveItem = async (orderId: string, itemId: string) => {
-    try {
-      await orderService.updateItem(orderId, itemId, { status: 'SERVED' })
-      fetchOrders()
-    } catch { message.error('Cập nhật thất bại') }
-  }
-
   return (
     <AppLayout role={user?.role ?? 'barista'} username={user?.name ?? ''} onLogout={handleLogout}>
       <div className={styles.topNav}>
