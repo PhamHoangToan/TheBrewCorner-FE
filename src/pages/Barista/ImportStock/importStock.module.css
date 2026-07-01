@@ -1,0 +1,115 @@
+:root {
+  --brand: #662c21;
+}
+
+.pageWrap {
+  max-width: 800px;
+}
+
+.formCard {
+  background: #fff;
+  border-radius: 12px;
+  padding: 28px 32px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+@media (max-width: 576px) {
+  .formCard { padding: 18px 16px; }
+}
+
+.cardTitle {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--brand);
+  margin-bottom: 24px;
+}
+
+.sectionLabel {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+  margin: 16px 0 8px;
+}
+
+.tableScroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 12px;
+}
+
+.itemsTable {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  margin-bottom: 0;
+}
+
+.itemsTable th {
+  background: var(--brand);
+  color: #fff;
+  padding: 8px 10px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  text-align: left;
+}
+
+.itemsTable td {
+  padding: 6px 10px;
+  border-bottom: 1px solid #f0e8e4;
+}
+
+.itemsTable tr:nth-child(even) td {
+  background: #fdf6f0;
+}
+
+.addRowBtn {
+  border: 1px dashed var(--brand) !important;
+  color: var(--brand) !important;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.removeBtn {
+  background: none;
+  border: none;
+  color: #e53935;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--brand);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btnCancel {
+  border-color: var(--brand) !important;
+  color: var(--brand) !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-weight: 600 !important;
+}
+
+.btnSubmit {
+  background: var(--brand) !important;
+  border-color: var(--brand) !important;
+  color: #fff !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-weight: 600 !important;
+}

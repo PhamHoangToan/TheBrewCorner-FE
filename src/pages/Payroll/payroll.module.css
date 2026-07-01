@@ -1,0 +1,90 @@
+.toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.tableWrap {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.summaryCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  text-align: center;
+}
+
+.cardLabel {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+.cardValue {
+  font-size: 20px;
+  font-weight: 700;
+  color: #662c21;
+}
+
+.detailHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.empName {
+  font-size: 18px;
+  font-weight: 700;
+  color: #222;
+}
+
+.empMeta {
+  font-size: 13px;
+  color: #888;
+}
+
+.periodNav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.periodLabel {
+  font-size: 15px;
+  font-weight: 600;
+  min-width: 100px;
+  text-align: center;
+  color: #662c21;
+}
+
+.statusDraft  { color: #d48806; }
+.statusApproved { color: #389e0d; }
+.statusPaid   { color: #096dd9; }
+
+.dayTypeWork       { color: #389e0d; }
+.dayTypePaidLeave  { color: #096dd9; }
+.dayTypeAbsent     { color: #cf1322; }
+.dayTypeRest       { color: #aaa; }
+
+.backBtn {
+  color: #662c21;
+}

@@ -1,0 +1,100 @@
+:root {
+  --brand: #662c21;
+  --card-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+}
+
+.topNav {
+  display: flex;
+  gap: 0;
+  margin-bottom: 20px;
+}
+
+.navTab {
+  padding: 10px 24px;
+  border: 2px solid var(--brand);
+  background: var(--brand);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 8px 0 0 8px;
+}
+
+.navTabInactive {
+  background: #fff;
+  color: var(--brand);
+  border-radius: 0 8px 8px 0;
+}
+
+.empty {
+  text-align: center;
+  color: #888;
+  padding: 60px 0;
+  font-size: 15px;
+}
+
+.cardsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.returnCard {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+
+.cardHeader {
+  background: var(--brand);
+  padding: 10px 16px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cardBody {
+  padding: 12px 16px;
+}
+
+.itemRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0e8e4;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.itemInfo {
+  flex: 1;
+}
+
+.itemName {
+  font-weight: 600;
+  font-size: 14px;
+  color: #301e1e;
+}
+
+.itemNote {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-top: 2px;
+}
+
+.itemActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.rejectInputRow {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}

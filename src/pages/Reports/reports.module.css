@@ -1,0 +1,43 @@
+:root {
+  --brand: #662c21;
+  --bg: var(--bg-page, #f5ede8);
+  --cream: #fee1bf;
+  --text-dark: #301e1e;
+  --text-secondary: #392315;
+  --active-tab-bg: #fff1e6;
+  --card-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+}
+
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tableWrap :global(.ant-table-thead > tr > th) {
+  background: var(--brand);
+  color: #fff;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+}
+
+.tableWrap :global(.ant-table-thead > tr > th::before) {
+  display: none;
+}
+
+.tabs :global(.ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn) {
+  color: var(--brand);
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+}
+
+.tabs :global(.ant-tabs-ink-bar) {
+  background: var(--brand);
+}

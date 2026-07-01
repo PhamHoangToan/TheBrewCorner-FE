@@ -1,0 +1,75 @@
+:root {
+  --brand: #662c21;
+  --cream: #fee1bf;
+}
+
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.filterLabel {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+  white-space: nowrap;
+}
+
+.btnFilter {
+  background: var(--brand) !important;
+  border-color: var(--brand) !important;
+  color: #fff !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-weight: 600 !important;
+}
+
+.statsCards {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.statCard {
+  flex: 1;
+  min-width: 160px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border-top: 4px solid var(--brand);
+}
+
+.statLabel {
+  font-family: 'Lato', sans-serif;
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.statValue {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--brand);
+}
+
+.tableWrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tableWrap :global(.ant-table-thead > tr > th) {
+  background: var(--brand);
+  color: #fff;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+}
+
+.tableWrap :global(.ant-table-thead > tr > th::before) {
+  display: none;
+}

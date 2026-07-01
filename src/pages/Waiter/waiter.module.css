@@ -1,0 +1,110 @@
+:root {
+  --brand: #662c21;
+  --bg: var(--bg-page, #f5ede8);
+  --cream: #fee1bf;
+  --text-dark: #301e1e;
+  --text-secondary: #392315;
+  --active-tab-bg: #fff1e6;
+  --card-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+}
+
+.tabsRow {
+  display: flex;
+  gap: 0;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  padding: 12px 24px;
+  border: 2px solid var(--brand);
+  background: #fff;
+  font-family: 'Lato', sans-serif;
+  font-size: 15px;
+  cursor: pointer;
+  color: var(--brand);
+  font-weight: 500;
+}
+
+.tab:first-child { border-radius: 8px 0 0 8px; }
+.tab:last-child { border-radius: 0 8px 8px 0; }
+
+.tabActive {
+  background: var(--brand);
+  color: #fff;
+}
+
+.cardsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.tableCard {
+  width: 340px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+  background: #fff;
+}
+
+@media (max-width: 768px) {
+  .tableCard { width: 100%; }
+}
+
+.cardHeader {
+  background: #c4c4c4;
+  padding: 10px 16px;
+  font-family: 'Lato', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cardBody {
+  padding: 12px 16px;
+}
+
+.waiterName {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.itemRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0e8e4;
+  font-family: 'Lato', sans-serif;
+  font-size: 14px;
+}
+
+.bellBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+.returnBtn {
+  margin-top: 12px;
+  width: 100%;
+  background-color: var(--brand) !important;
+  border-color: var(--brand) !important;
+  color: var(--cream) !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-weight: 600 !important;
+}
+
+.clockBadge {
+  font-size: 12px;
+  background: #f0e8e4;
+  padding: 2px 8px;
+  border-radius: 10px;
+  color: var(--text-secondary);
+}

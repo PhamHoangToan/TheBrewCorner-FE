@@ -1,0 +1,46 @@
+.toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.tableWrap {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.penaltyCard {
+  background: #fff8f6;
+  border: 1px solid #f0d0c8;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.penaltyTitle {
+  font-weight: 700;
+  color: #662c21;
+  margin-bottom: 12px;
+}
+
+.penaltyGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.lateTag { color: #d46b08; background: #fff7e6; border-color: #ffd591; }
+.earlyTag { color: #c41d7f; background: #fff0f6; border-color: #ffadd2; }
+.absentTag { color: #cf1322; background: #fff1f0; border-color: #ffa39e; }
+.workTag { color: #389e0d; background: #f6ffed; border-color: #b7eb8f; }
+
+@media (max-width: 576px) {
+  .tableWrap, .penaltyCard { padding: 10px; }
+  .penaltyGrid { grid-template-columns: 1fr; }
+}

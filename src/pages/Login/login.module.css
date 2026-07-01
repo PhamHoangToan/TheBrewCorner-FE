@@ -1,0 +1,190 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@200;700&family=Work+Sans:wght@700&display=swap');
+
+:root {
+  --color-bg:        #ddbea9;
+  --color-brand:     #662c21;
+  --color-text-dark: #301e1e;
+  --color-white:     #ffffff;
+  --color-cream:     #fee1bf;
+  --color-black:     #000000;
+}
+
+@keyframes blobFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(24px, -18px) scale(1.05); }
+  66%       { transform: translate(-18px, 12px) scale(0.96); }
+}
+
+@keyframes cardEntrance {
+  from { opacity: 0; transform: translateY(36px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.page {
+  min-height: 100vh;
+  background-color: var(--color-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated blobs */
+.page::before,
+.page::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.page::before {
+  width: 400px;
+  height: 400px;
+  background: rgba(102,44,33,0.18);
+  top: -80px;
+  left: -100px;
+  animation: blobFloat 10s ease-in-out infinite;
+}
+
+.page::after {
+  width: 320px;
+  height: 320px;
+  background: rgba(254,225,191,0.3);
+  bottom: -60px;
+  right: -80px;
+  animation: blobFloat 13s ease-in-out infinite reverse;
+}
+
+.coffeeDecor {
+  width: 320px;
+  height: auto;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  box-shadow: 0px 4px 16px rgba(0,0,0,0.2);
+  pointer-events: none;
+  user-select: none;
+  position: relative;
+  z-index: 1;
+  animation: cardEntrance 0.55s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+.card {
+  width: 100%;
+  max-width: 500px;
+  background-color: var(--color-white);
+  border-radius: 24px;
+  padding: 40px 44px;
+  box-shadow: 0 12px 48px rgba(102,44,33,0.2);
+  position: relative;
+  z-index: 1;
+  animation: cardEntrance 0.6s cubic-bezier(0.22,1,0.36,1) 0.1s both;
+}
+
+@media (max-width: 480px) {
+  .card { padding: 28px 22px; border-radius: 18px; }
+  .coffeeDecor { width: 100%; max-width: 260px; }
+}
+
+/* ── Ant Design label overrides ── */
+.card :global(.ant-form-item-label > label) {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--color-text-dark);
+  height: auto;
+}
+
+/* ── Input overrides ── */
+.card :global(.ant-input-affix-wrapper),
+.card :global(.ant-input) {
+  border-radius: 20px !important;
+  height: 56px;
+  background-color: var(--color-white);
+  font-size: 15px;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+.card :global(.ant-input-affix-wrapper):focus-within {
+  border-color: var(--color-brand) !important;
+  box-shadow: 0 0 0 2px rgba(102,44,33,0.12) !important;
+}
+
+.card :global(.ant-input-affix-wrapper) :global(.ant-input) {
+  height: auto;
+}
+
+/* ── Role selector ── */
+.roleGroup {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 4px;
+}
+
+.roleItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 8px;
+  transition: opacity 0.15s, background 0.15s;
+}
+.roleItem:hover { opacity: 0.75; background: rgba(102,44,33,0.06); }
+
+.roleRadio {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--color-brand);
+  background-color: var(--color-white);
+  display: inline-block;
+  flex-shrink: 0;
+  transition: background-color 0.15s, transform 0.15s;
+}
+.roleRadioSelected {
+  background-color: var(--color-brand);
+  transform: scale(1.1);
+}
+
+.roleLabel {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 200;
+  font-size: 14px;
+  color: var(--color-black);
+  white-space: nowrap;
+}
+
+/* ── Submit button ── */
+.submitBtn {
+  height: 64px !important;
+  border-radius: 20px !important;
+  background-color: var(--color-brand) !important;
+  border: none !important;
+  font-family: 'Work Sans', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 22px !important;
+  letter-spacing: -0.02em !important;
+  color: var(--color-cream) !important;
+  text-shadow: 0px 2px 6px rgba(0,0,0,0.2) !important;
+  box-shadow: none !important;
+  transition: transform 0.18s, box-shadow 0.18s, background-color 0.18s !important;
+}
+
+.submitBtn:hover,
+.submitBtn:focus {
+  background-color: #7a3527 !important;
+  color: var(--color-cream) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 24px rgba(102,44,33,0.3) !important;
+}

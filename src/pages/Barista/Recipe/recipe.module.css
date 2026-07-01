@@ -1,0 +1,111 @@
+.topNav {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 0;
+}
+
+.navTab {
+  padding: 8px 20px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #662c21;
+  border-bottom: 3px solid #662c21;
+  margin-bottom: -2px;
+}
+
+.navTabInactive {
+  color: #888;
+  border-bottom: 3px solid transparent;
+}
+
+.navTabInactive:hover {
+  color: #662c21;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tableWrap {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.recipeTag {
+  font-size: 12px;
+  color: #888;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.recipeTagHas {
+  color: #499b6b;
+  font-weight: 600;
+}
+
+.recipeRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+  .recipeRow { gap: 6px; }
+  .recipeIngredientSelect { flex: 1 1 100%; }
+}
+
+.recipeIngredientSelect {
+  flex: 1;
+  min-width: 0;
+}
+
+.recipeQtyInput {
+  width: 90px;
+}
+
+.recipeWasteInput {
+  width: 80px;
+}
+
+.recipeUnitInput {
+  width: 70px;
+}
+
+.addRowBtn {
+  margin-top: 4px;
+  color: #662c21;
+  border-color: #662c21;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.saveBtn {
+  background: #662c21;
+  border-color: #662c21;
+  color: #fff;
+}
+
+.saveBtn:hover {
+  background: #7d3628 !important;
+  border-color: #7d3628 !important;
+}

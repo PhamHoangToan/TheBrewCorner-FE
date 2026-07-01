@@ -1,0 +1,29 @@
+:root {
+  --brand: #662c21;
+}
+
+.toolbar {
+  margin-bottom: 16px;
+}
+
+.table {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.addBtn {
+  background-color: var(--brand) !important;
+  border-color: var(--brand) !important;
+}
+
+.table :global(.ant-table-thead > tr > th) {
+  background-color: var(--brand);
+  color: #fff;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+}
+
+.actionBtns {
+  display: flex;
+  gap: 8px;
+}

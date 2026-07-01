@@ -1,0 +1,194 @@
+:root {
+  --brand: #662c21;
+  --bg: var(--bg-page, #f5ede8);
+  --cream: #fee1bf;
+  --text-dark: #301e1e;
+  --text-secondary: #392315;
+  --active-tab-bg: #fff1e6;
+  --card-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+}
+
+.topNav {
+  display: flex;
+  gap: 0;
+  margin-bottom: 16px;
+}
+
+.navTab {
+  padding: 10px 28px;
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.navTab:first-child { border-radius: 8px 0 0 8px; }
+.navTab:last-child { border-radius: 0 8px 8px 0; }
+
+.navTabInactive {
+  background: #fff;
+  color: var(--brand);
+  border: 2px solid var(--brand);
+}
+
+.actionRow {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.btnBaohет {
+  background: #ff5f5e !important;
+  border: 1.2px solid #990605 !important;
+  color: #000 !important;
+  font-family: 'Lato', sans-serif !important;
+  font-weight: 600 !important;
+  height: 44px !important;
+}
+
+.btnTrahet {
+  background: rgba(2, 171, 72, 0.67) !important;
+  border: 1.2px solid #037122 !important;
+  color: #000 !important;
+  font-family: 'Lato', sans-serif !important;
+  font-weight: 600 !important;
+  height: 44px !important;
+}
+
+.cardsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 20px;
+  padding-bottom: 150px;
+}
+
+.orderCard {
+  width: 320px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+  background: #fff;
+}
+
+@media (max-width: 768px) {
+  .orderCard { width: 100%; }
+}
+
+.cardHeader {
+  background: #c4c4c4;
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cardHeaderTitle {
+  font-family: 'Lato', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.clockBadge {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+}
+
+.cardBody {
+  padding: 10px 16px;
+}
+
+.waiterRow {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.itemRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background: #fff;
+  border-radius: 20px;
+  margin-bottom: 6px;
+  border: 1px solid #f0e8e4;
+  font-family: 'Lato', sans-serif;
+  font-size: 13px;
+}
+
+.bellBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 15px;
+}
+
+.statusBar {
+  position: fixed;
+  bottom: 0;
+  left: 240px;
+  right: 0;
+  height: 130px;
+  background: #b7776b;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 16px;
+  overflow-x: auto;
+}
+
+@media (max-width: 992px) {
+  .statusBar { left: 0; }
+}
+
+@media (max-width: 576px) {
+  .statusBar { height: 110px; padding: 0 12px; gap: 10px; }
+}
+
+.statusCard {
+  width: 200px;
+  height: 100px;
+  background: #fff;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.statusCardName {
+  font-family: 'Lato', sans-serif;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.timeBadge {
+  font-family: 'Lato', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.timeBadgeRed {
+  color: #e21a1a;
+}
+
+.timeBadgeOrange {
+  color: #f94f19;
+}
+
+.timeBadgeGreen {
+  color: #499b6b;
+}
