@@ -141,7 +141,10 @@ const Reports: React.FC = () => {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="hour" tickFormatter={(h) => `${h}h`} />
                       <YAxis />
-                      <Tooltip formatter={(v: number) => fmtVnd(v)} labelFormatter={(h) => `${h}h - ${h + 1}h`} />
+                      <Tooltip
+                        formatter={(v) => fmtVnd(Number(Array.isArray(v) ? v[0] : v))}
+                        labelFormatter={(h) => `${h}h - ${Number(h) + 1}h`}
+                      />
                       <Bar dataKey="revenue" fill="#662c21" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
