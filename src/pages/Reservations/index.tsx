@@ -80,7 +80,7 @@ const ReservationsPage: React.FC = () => {
 
   const fetchTables = useCallback(async () => {
     try {
-      const res = await tableService.list({ limit: 200 })
+      const res = await tableService.list({ limit: 200, status: 'AVAILABLE' })
       const items: any[] = (res.data as any)?.items ?? []
       setTables(items.map((t) => ({ id: t.id, name: t.name, status: t.status })))
     } catch {
@@ -131,9 +131,8 @@ const ReservationsPage: React.FC = () => {
       width: 180,
       render: (_, row) => {
         if (row.status !== 'PENDING') return row.tableName ?? '—'
-        const availableOptions = tables
-          .filter((t) => t.status === 'AVAILABLE' || t.id === row.tableId)
-          .map((t) => ({ value: t.id, label: t.name }))
+        // tables đã lọc AVAILABLE ngay từ BE, không cần lọc lại phía client
+        const availableOptions = tables.map((t) => ({ value: t.id, label: t.name }))
         return (
           <Select
             allowClear
