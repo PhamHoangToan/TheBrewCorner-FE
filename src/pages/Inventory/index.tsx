@@ -19,6 +19,12 @@ interface Ingredient {
   trangThai: 'Đủ hàng' | 'Sắp hết' | 'Hết hàng'
 }
 
+interface Forecast {
+  avgDailyUsage: number
+  daysUntilStockout: number | null
+  hasEnoughData: boolean
+}
+
 const MOCK_DATA: Ingredient[] = [
   { key: '1', ma: 'NVL001', ten: 'Cà phê Arabica', donVi: 'kg',   usagePerUnit: 1000, tonKho: 12, canhBao: 5, trangThai: 'Đủ hàng' },
   { key: '2', ma: 'NVL002', ten: 'Sữa tươi',        donVi: 'lít', usagePerUnit: 1000, tonKho: 3,  canhBao: 5, trangThai: 'Sắp hết' },
@@ -58,6 +64,7 @@ const Inventory: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Ingredient | null>(null)
   const [form] = Form.useForm()
+  const [forecastMap, setForecastMap] = useState<Record<string, Forecast>>({})
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -72,7 +79,25 @@ const Inventory: React.FC = () => {
     }
   }, [])
 
-  useEffect(() => { fetchData() }, [fetchData])
+  const fetchForecast = useCallback(async () => {
+    try {
+      const res = await ingredientService.forecast()
+      const items: any[] = (res.data as any) ?? []
+      const map: Record<string, Forecast> = {}
+      items.forEach((item) => {
+        map[item.ingredientId] = {
+          avgDailyUsage: item.avgDailyUsage,
+          daysUntilStockout: item.daysUntilStockout,
+          hasEnoughData: item.hasEnoughData,
+        }
+      })
+      setForecastMap(map)
+    } catch {
+      setForecastMap({})
+    }
+  }, [])
+
+  useEffect(() => { fetchData(); fetchForecast() }, [fetchData, fetchForecast])
 
   const openAdd = () => { setEditing(null); form.resetFields(); setModalOpen(true) }
   const openEdit = (record: Ingredient) => {
@@ -115,6 +140,24 @@ const Inventory: React.FC = () => {
     { title: 'Cảnh báo tối thiểu', dataIndex: 'canhBao', key: 'canhBao', align: 'center', width: 160 },
     { title: 'Trạng thái', dataIndex: 'trangThai', key: 'trangThai', width: 130,
       render: (v: string) => <Tag color={STATUS_COLOR[v]}>{v}</Tag> },
+    {
+      title: 'Dự báo hết hàng',
+      key: 'forecast',
+      width: 170,
+      render: (_, record) => {
+        const forecast = record.id ? forecastMap[record.id] : undefined
+        if (!forecast || !forecast.hasEnoughData || forecast.daysUntilStockout === null) {
+          return <Tag>Chưa đủ dữ liệu</Tag>
+        }
+        const days = forecast.daysUntilStockout
+        const color = days < 3 ? 'red' : days < 7 ? 'orange' : 'green'
+        return (
+          <Tooltip title={`Tốc độ dùng ~${forecast.avgDailyUsage}/ngày (14 ngày gần nhất)`}>
+            <Tag color={color}>~{days} ngày nữa</Tag>
+          </Tooltip>
+        )
+      },
+    },
     { title: 'Thao tác', key: 'action', width: 110,
       render: (_, record) => (
         <div className={styles.actionBtns}>

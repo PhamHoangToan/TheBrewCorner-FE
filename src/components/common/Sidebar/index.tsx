@@ -16,6 +16,7 @@ import {
   HistoryOutlined,
   InboxOutlined,
   LeftOutlined,
+  ScheduleOutlined,
   ShoppingCartOutlined,
   TableOutlined,
   TeamOutlined,
@@ -46,6 +47,7 @@ const MENU_BY_ROLE: Record<Role, MenuItem[]> = {
     { key: '/attendance',      label: 'Chấm công',       icon: <CalendarOutlined /> },
     { key: '/payroll',         label: 'Bảng lương',      icon: <DollarOutlined /> },
     { key: '/promotions',      label: 'Khuyến mãi',      icon: <GiftOutlined /> },
+    { key: '/reservations',    label: 'Đặt bàn trước',   icon: <ScheduleOutlined /> },
     { key: '/activity-logs',   label: 'Nhật ký hoạt động', icon: <HistoryOutlined /> },
   ],
   cashier: [
@@ -61,9 +63,10 @@ const MENU_BY_ROLE: Record<Role, MenuItem[]> = {
     { key: '/menu/products', label: 'Thực đơn',  icon: <CoffeeOutlined /> },
   ],
   waiter: [
-    { key: '/waiter',    label: 'Trang chủ', icon: <DashboardOutlined /> },
-    { key: '/table-map', label: 'Sơ đồ bàn', icon: <TableOutlined /> },
-    { key: '/orders',    label: 'Gọi món',   icon: <ShoppingCartOutlined /> },
+    { key: '/waiter',        label: 'Trang chủ', icon: <DashboardOutlined /> },
+    { key: '/table-map',     label: 'Sơ đồ bàn', icon: <TableOutlined /> },
+    { key: '/orders',        label: 'Gọi món',   icon: <ShoppingCartOutlined /> },
+    { key: '/reservations',  label: 'Đặt bàn trước', icon: <ScheduleOutlined /> },
   ],
 }
 

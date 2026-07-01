@@ -75,6 +75,7 @@
 .dot_preparing { background: #fde68a; border: 2px solid #f59e0b; }
 .dot_served    { background: #a5f3fc; border: 2px solid #06b6d4; }
 .dot_checkout  { background: #86efac; border: 2px solid #22c55e; }
+.dot_reserved  { background: #ddd6fe; border: 2px solid #7c3aed; }
 
 .legendLabel { font-size: 13px; color: #444; font-family: 'Lato', sans-serif; font-weight: 600; }
 .legendCount  { font-size: 12px; color: #888; font-family: 'Lato', sans-serif; }
@@ -130,6 +131,7 @@
              checkoutPulse 2.2s ease-in-out infinite;
   animation-delay: calc(var(--i, 0) * 30ms), 0.8s;
 }
+.tile_reserved  { background: #f5f3ff; border-color: #7c3aed; }
 
 /* ── Tile content ── */
 .tileHeader {
@@ -162,6 +164,7 @@
 .badge_preparing { background: #fef9c3; color: #b45309; }
 .badge_served    { background: #cffafe; color: #0891b2; }
 .badge_checkout  { background: #dcfce7; color: #16a34a; }
+.badge_reserved  { background: #ede9fe; color: #7c3aed; }
 
 .tileArea { font-size: 11px; color: #9ca3af; font-family: 'Lato', sans-serif; }
 

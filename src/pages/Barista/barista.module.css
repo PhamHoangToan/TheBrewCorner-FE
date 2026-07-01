@@ -192,3 +192,36 @@
 .timeBadgeGreen {
   color: #499b6b;
 }
+
+.orderCardNew {
+  animation: orderCardPulse 1.5s ease-in-out 2;
+}
+
+@keyframes orderCardPulse {
+  0%, 100% { box-shadow: var(--card-shadow); }
+  50% { box-shadow: 0 0 0 5px #f94f19, var(--card-shadow); }
+}
+
+.kdsContainer {
+  min-height: 100vh;
+  background: var(--bg);
+  padding: 24px;
+}
+
+.cardsGridKds {
+  padding-bottom: 24px;
+}
+
+.orderCardKds {
+  width: 380px;
+  font-size: 1.15em;
+}
+
+.orderCardKds .cardHeaderTitle {
+  font-size: 20px;
+}
+
+.orderCardKds .itemRow {
+  font-size: 16px;
+  padding: 10px 12px;
+}

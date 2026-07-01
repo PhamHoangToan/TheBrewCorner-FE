@@ -33,6 +33,7 @@ const Shift = lazy(() => import('../pages/Shift'))
 const OrderList = lazy(() => import('../pages/Order/OrderList'))
 const OrderDetail = lazy(() => import('../pages/Order/OrderDetail'))
 const TableMap = lazy(() => import('../pages/TableMap'))
+const Reservations = lazy(() => import('../pages/Reservations'))
 const StaffRequests = lazy(() => import('../pages/StaffRequests'))
 const ChangePassword = lazy(() => import('../pages/ChangePassword'))
 const ActivityLog = lazy(() => import('../pages/ActivityLog'))
@@ -320,6 +321,14 @@ const AppRouter: React.FC = () => (
             element={
               <RoleRoute roles={['waiter', 'cashier']}>
                 <TableMap />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/reservations"
+            element={
+              <RoleRoute roles={['admin', 'waiter']}>
+                <Reservations />
               </RoleRoute>
             }
           />

@@ -11,6 +11,7 @@ interface TableCard {
   id: string
   name: string
   area: string
+  tableStatus: string
   orderId: string
   orderStatus: string
   orderPaid: boolean
@@ -20,10 +21,11 @@ interface TableCard {
   elapsedMin: number
 }
 
-type TableColor = 'available' | 'waiting' | 'preparing' | 'served' | 'checkout'
+type TableColor = 'available' | 'waiting' | 'preparing' | 'served' | 'checkout' | 'reserved'
 
-function getTableColor(card: Pick<TableCard, 'orderStatus' | 'orderPaid' | 'activeItemStatuses'>): TableColor {
-  const { orderStatus, orderPaid, activeItemStatuses } = card
+function getTableColor(card: Pick<TableCard, 'tableStatus' | 'orderStatus' | 'orderPaid' | 'activeItemStatuses'>): TableColor {
+  const { tableStatus, orderStatus, orderPaid, activeItemStatuses } = card
+  if (!orderStatus && tableStatus === 'RESERVED') return 'reserved'
   if (!orderStatus) return 'available'
   // PAID: màu dựa theo trạng thái món chưa phục vụ
   if (orderPaid) {
@@ -39,8 +41,9 @@ function getTableColor(card: Pick<TableCard, 'orderStatus' | 'orderPaid' | 'acti
   return 'available'
 }
 
-function getStatusLabel(card: Pick<TableCard, 'orderStatus' | 'orderPaid' | 'activeItemStatuses'>): string {
-  const { orderStatus, orderPaid, activeItemStatuses } = card
+function getStatusLabel(card: Pick<TableCard, 'tableStatus' | 'orderStatus' | 'orderPaid' | 'activeItemStatuses'>): string {
+  const { tableStatus, orderStatus, orderPaid, activeItemStatuses } = card
+  if (!orderStatus && tableStatus === 'RESERVED') return 'Đã đặt trước'
   if (!orderStatus) return 'Trống'
   if (orderPaid) {
     if (activeItemStatuses.some((s) => s === 'PREPARING')) return 'Đã TT - Đang làm'
@@ -62,6 +65,7 @@ const LEGEND = [
   { color: 'preparing' as TableColor, label: 'Đang làm / Sắp xong' },
   { color: 'served' as TableColor, label: 'Đã phục vụ' },
   { color: 'checkout' as TableColor, label: 'Chờ thanh toán' },
+  { color: 'reserved' as TableColor, label: 'Đã đặt trước' },
 ]
 
 const DONE_ITEM_STATUSES = new Set(['SERVED', 'RETURNED', 'CANCELLED'])
@@ -87,6 +91,7 @@ const mapTable = (item: any, idx: number): TableCard => {
     id: item.id ?? String(idx),
     name: item.name ?? item.code ?? `Bàn ${String(idx + 1).padStart(2, '0')}`,
     area: item.area?.name ?? '',
+    tableStatus: item.status ?? '',
     orderId: activeOrder?.id ?? '',
     orderStatus: activeOrder?.status ?? '',
     orderPaid: activeOrder?.status === 'PAID',
@@ -145,7 +150,7 @@ const TableMap: React.FC = () => {
   }
 
   const summaryByColor: Record<TableColor, number> = {
-    available: 0, waiting: 0, preparing: 0, served: 0, checkout: 0,
+    available: 0, waiting: 0, preparing: 0, served: 0, checkout: 0, reserved: 0,
   }
   tables.forEach((t) => { summaryByColor[getTableColor(t)]++ })
 

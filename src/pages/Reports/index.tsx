@@ -1,9 +1,12 @@
-import React from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { DatePicker, Table, Tabs } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import dayjs, { type Dayjs } from 'dayjs'
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import AppLayout from '../../components/common/AppLayout'
 import PageHeader from '../../components/common/PageHeader'
 import { useAuth } from '../../hooks/useAuth'
+import { reportService } from '../../services/report.service'
 import styles from './reports.module.css'
 
 const { RangePicker } = DatePicker
@@ -11,52 +14,83 @@ const { RangePicker } = DatePicker
 interface RevenueRow {
   key: string
   ngay: string
-  doanhthu: string
-  sodon: number
-  trungbinh: string
+  doanhthu: number
 }
 
 interface SalesRow {
   key: string
   tenmon: string
   soluongban: number
-  doanhthu: string
-  phantram: string
+  doanhthu: number
 }
 
-const MOCK_REVENUE: RevenueRow[] = [
-  { key: '1', ngay: '01/11/2021', doanhthu: '2.450.000', sodon: 28, trungbinh: '87.500' },
-  { key: '2', ngay: '02/11/2021', doanhthu: '1.980.000', sodon: 22, trungbinh: '90.000' },
-  { key: '3', ngay: '03/11/2021', doanhthu: '3.120.000', sodon: 35, trungbinh: '89.143' },
-  { key: '4', ngay: '04/11/2021', doanhthu: '2.750.000', sodon: 30, trungbinh: '91.667' },
-  { key: '5', ngay: '05/11/2021', doanhthu: '1.540.000', sodon: 18, trungbinh: '85.556' },
-]
+interface HourRow {
+  hour: number
+  revenue: number
+  orderCount: number
+}
 
-const MOCK_SALES: SalesRow[] = [
-  { key: '1', tenmon: 'Cappuccino', soluongban: 48, doanhthu: '3.120.000', phantram: '18.2%' },
-  { key: '2', tenmon: 'Cafe Latte', soluongban: 42, doanhthu: '2.730.000', phantram: '15.9%' },
-  { key: '3', tenmon: 'Trà Thạch Đào', soluongban: 38, doanhthu: '1.482.000', phantram: '8.6%' },
-  { key: '4', tenmon: 'Black Coffee', soluongban: 55, doanhthu: '1.375.000', phantram: '8.0%' },
-  { key: '5', tenmon: 'Tiramisu', soluongban: 30, doanhthu: '900.000', phantram: '5.2%' },
-  { key: '6', tenmon: 'Espresso', soluongban: 25, doanhthu: '975.000', phantram: '5.7%' },
-]
+const fmtVnd = (v: number) => v.toLocaleString('vi-VN')
 
 const revenueColumns: ColumnsType<RevenueRow> = [
   { title: 'Ngày', dataIndex: 'ngay', key: 'ngay' },
-  { title: 'Doanh thu (VND)', dataIndex: 'doanhthu', key: 'doanhthu', align: 'right' },
-  { title: 'Số đơn', dataIndex: 'sodon', key: 'sodon', align: 'center' },
-  { title: 'Trung bình/đơn (VND)', dataIndex: 'trungbinh', key: 'trungbinh', align: 'right' },
+  { title: 'Doanh thu (VND)', dataIndex: 'doanhthu', key: 'doanhthu', align: 'right', render: fmtVnd },
 ]
 
 const salesColumns: ColumnsType<SalesRow> = [
   { title: 'Tên món', dataIndex: 'tenmon', key: 'tenmon' },
   { title: 'Số lượng bán', dataIndex: 'soluongban', key: 'soluongban', align: 'center' },
-  { title: 'Doanh thu (VND)', dataIndex: 'doanhthu', key: 'doanhthu', align: 'right' },
-  { title: '% Tổng', dataIndex: 'phantram', key: 'phantram', align: 'center' },
+  { title: 'Doanh thu (VND)', dataIndex: 'doanhthu', key: 'doanhthu', align: 'right', render: fmtVnd },
 ]
 
 const Reports: React.FC = () => {
   const { user, handleLogout } = useAuth()
+  const [range, setRange] = useState<[Dayjs, Dayjs]>([dayjs().subtract(30, 'day'), dayjs()])
+  const [revenueRows, setRevenueRows] = useState<RevenueRow[]>([])
+  const [salesRows, setSalesRows] = useState<SalesRow[]>([])
+  const [hourRows, setHourRows] = useState<HourRow[]>([])
+  const [loading, setLoading] = useState(false)
+
+  const fetchAll = useCallback(async () => {
+    setLoading(true)
+    const params = { startDate: range[0].format('YYYY-MM-DD'), endDate: range[1].format('YYYY-MM-DD') }
+    try {
+      const [revenueRes, salesRes, hourRes] = await Promise.all([
+        reportService.revenue(params),
+        reportService.sales(params),
+        reportService.revenueByHour(params),
+      ])
+      const revenueItems: any[] = (revenueRes.data as any) ?? []
+      setRevenueRows(revenueItems.map((r, idx) => ({
+        key: r.code ?? String(idx),
+        ngay: new Date(r.date).toLocaleString('vi-VN'),
+        doanhthu: Number(r.totalAmount),
+      })))
+
+      const salesItems: any[] = (salesRes.data as any) ?? []
+      setSalesRows(salesItems.map((s, idx) => ({
+        key: s.productId ?? String(idx),
+        tenmon: s.productName,
+        soluongban: s.quantity,
+        doanhthu: Number(s.revenue),
+      })))
+
+      const hourItems: any[] = (hourRes.data as any) ?? []
+      setHourRows(hourItems)
+    } catch {
+      setRevenueRows([])
+      setSalesRows([])
+      setHourRows([])
+    } finally {
+      setLoading(false)
+    }
+  }, [range])
+
+  useEffect(() => { fetchAll() }, [fetchAll])
+
+  const handleRangeChange = (values: any) => {
+    if (values?.[0] && values?.[1]) setRange([values[0], values[1]])
+  }
 
   return (
     <AppLayout role={user?.role ?? 'admin'} username={user?.name ?? ''} onLogout={handleLogout}>
@@ -71,10 +105,10 @@ const Reports: React.FC = () => {
             children: (
               <>
                 <div className={styles.filterRow}>
-                  <RangePicker format="DD/MM/YYYY" placeholder={['Từ ngày', 'Đến ngày']} />
+                  <RangePicker format="DD/MM/YYYY" value={range} onChange={handleRangeChange} />
                 </div>
                 <div className={styles.tableWrap}>
-                  <Table columns={revenueColumns} dataSource={MOCK_REVENUE} pagination={false} />
+                  <Table columns={revenueColumns} dataSource={revenueRows} loading={loading} pagination={{ pageSize: 10 }} />
                 </div>
               </>
             ),
@@ -85,10 +119,32 @@ const Reports: React.FC = () => {
             children: (
               <>
                 <div className={styles.filterRow}>
-                  <RangePicker format="DD/MM/YYYY" placeholder={['Từ ngày', 'Đến ngày']} />
+                  <RangePicker format="DD/MM/YYYY" value={range} onChange={handleRangeChange} />
                 </div>
                 <div className={styles.tableWrap}>
-                  <Table columns={salesColumns} dataSource={MOCK_SALES} pagination={false} />
+                  <Table columns={salesColumns} dataSource={salesRows} loading={loading} pagination={{ pageSize: 10 }} />
+                </div>
+              </>
+            ),
+          },
+          {
+            key: 'khunggio',
+            label: 'Doanh thu theo khung giờ',
+            children: (
+              <>
+                <div className={styles.filterRow}>
+                  <RangePicker format="DD/MM/YYYY" value={range} onChange={handleRangeChange} />
+                </div>
+                <div style={{ width: '100%', height: 360, marginTop: 16 }}>
+                  <ResponsiveContainer>
+                    <BarChart data={hourRows}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="hour" tickFormatter={(h) => `${h}h`} />
+                      <YAxis />
+                      <Tooltip formatter={(v: number) => fmtVnd(v)} labelFormatter={(h) => `${h}h - ${h + 1}h`} />
+                      <Bar dataKey="revenue" fill="#662c21" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </>
             ),
