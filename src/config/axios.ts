@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/auth.store'
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api',
   timeout: 15000,
+  headers: { 'X-Client': 'web-internal' },
 })
 
 apiClient.interceptors.request.use((config) => {

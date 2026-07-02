@@ -59,7 +59,7 @@ const Login: React.FC = () => {
     } catch (err: any) {
       const status = err?.response?.status
       if (status === 401 || status === 400) {
-        message.error('Sai tên đăng nhập hoặc mật khẩu')
+        message.error(err?.response?.data?.message || 'Sai tên đăng nhập hoặc mật khẩu')
       } else {
         // fallback: dev mode without backend
         const role = ROLE_MAP[selectedRole]
