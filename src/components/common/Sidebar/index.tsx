@@ -10,6 +10,7 @@ import {
   CloseOutlined,
   CoffeeOutlined,
   DashboardOutlined,
+  DeleteOutlined,
   DollarOutlined,
   FileTextOutlined,
   GiftOutlined,
@@ -42,6 +43,7 @@ const MENU_BY_ROLE: Record<Role, MenuItem[]> = {
     { key: '/staff',           label: 'Nhân viên',       icon: <TeamOutlined /> },
     { key: '/staff-requests',  label: 'Yêu cầu nhân viên', icon: <FileTextOutlined /> },
     { key: '/inventory',       label: 'Kho nguyên liệu', icon: <InboxOutlined /> },
+    { key: '/suppliers',       label: 'Nhà cung cấp',    icon: <ShoppingCartOutlined /> },
     { key: '/reports',         label: 'Báo cáo',         icon: <BarChartOutlined /> },
     { key: '/shift',           label: 'Ca làm việc',     icon: <ClockCircleOutlined /> },
     { key: '/attendance',      label: 'Chấm công',       icon: <CalendarOutlined /> },
@@ -49,6 +51,7 @@ const MENU_BY_ROLE: Record<Role, MenuItem[]> = {
     { key: '/promotions',      label: 'Khuyến mãi',      icon: <GiftOutlined /> },
     { key: '/reservations',    label: 'Đặt bàn trước',   icon: <ScheduleOutlined /> },
     { key: '/activity-logs',   label: 'Nhật ký hoạt động', icon: <HistoryOutlined /> },
+    { key: '/trash',           label: 'Đã ẩn',           icon: <DeleteOutlined /> },
   ],
   cashier: [
     { key: '/cashier',          label: 'Trang chủ', icon: <DashboardOutlined /> },

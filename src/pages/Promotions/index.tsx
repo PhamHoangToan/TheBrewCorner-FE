@@ -98,7 +98,7 @@ const Promotions: React.FC = () => {
   const deletePromo = async (id?: string, key?: string) => {
     try {
       if (id) await promotionService.remove(id)
-      message.success('Đã xóa')
+      message.success('Đã ẩn')
       fetchData()
     } catch {
       setOrderPromos((p) => p.filter((d) => d.key !== key))
@@ -141,14 +141,14 @@ const Promotions: React.FC = () => {
             const toDelete = orderPromos.filter((d) => selectedOrder.includes(d.key))
             try {
               await Promise.all(toDelete.filter((d) => d.id).map((d) => promotionService.remove(d.id!)))
-              message.success('Đã xóa')
+              message.success('Đã ẩn')
               setSelectedOrder([])
               fetchData()
             } catch (err: any) {
-              message.error(err?.response?.data?.message ?? 'Xóa thất bại')
+              message.error(err?.response?.data?.message ?? 'Ẩn thất bại')
             }
           }}>
-          Xóa
+          Ẩn
         </Button>
       </div>
       <Table

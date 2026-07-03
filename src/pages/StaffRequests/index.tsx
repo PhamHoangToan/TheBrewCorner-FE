@@ -8,6 +8,7 @@ import PageHeader from '../../components/common/PageHeader'
 import { useAuth } from '../../hooks/useAuth'
 import { leaveRequestService, type LeaveRequest } from '../../services/leaveRequest.service'
 import { attendanceService, type AttendanceCorrectionRequest } from '../../services/attendance.service'
+import { shiftService, type ShiftChangeRequest } from '../../services/shift.service'
 import styles from './staffRequests.module.css'
 
 const STATUS_LABEL: Record<string, string> = { PENDING: 'Chờ duyệt', APPROVED: 'Đã duyệt', REJECTED: 'Từ chối' }
@@ -24,8 +25,10 @@ const StaffRequestsPage: React.FC = () => {
   const [leavesLoading, setLeavesLoading] = useState(false)
   const [corrections, setCorrections] = useState<AttendanceCorrectionRequest[]>([])
   const [correctionsLoading, setCorrectionsLoading] = useState(false)
+  const [shiftRequests, setShiftRequests] = useState<ShiftChangeRequest[]>([])
+  const [shiftRequestsLoading, setShiftRequestsLoading] = useState(false)
 
-  const [rejectTarget, setRejectTarget] = useState<{ kind: 'leave' | 'correction'; id: string } | null>(null)
+  const [rejectTarget, setRejectTarget] = useState<{ kind: 'leave' | 'correction' | 'shift'; id: string } | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({})
 
@@ -55,7 +58,20 @@ const StaffRequestsPage: React.FC = () => {
     }
   }, [statusFilter])
 
-  useEffect(() => { fetchLeaves(); fetchCorrections() }, [fetchLeaves, fetchCorrections])
+  const fetchShiftRequests = useCallback(async () => {
+    setShiftRequestsLoading(true)
+    try {
+      const params = statusFilter === 'ALL' ? undefined : { status: statusFilter }
+      const res = await shiftService.listRequests(params)
+      setShiftRequests(res.data?.items ?? [])
+    } catch {
+      message.error('Không tải được danh sách yêu cầu ca')
+    } finally {
+      setShiftRequestsLoading(false)
+    }
+  }, [statusFilter])
+
+  useEffect(() => { fetchLeaves(); fetchCorrections(); fetchShiftRequests() }, [fetchLeaves, fetchCorrections, fetchShiftRequests])
 
   const handleApproveLeave = async (id: string) => {
     setActionLoading((p) => ({ ...p, [id]: true }))
@@ -83,7 +99,20 @@ const StaffRequestsPage: React.FC = () => {
     }
   }
 
-  const openReject = (kind: 'leave' | 'correction', id: string) => {
+  const handleApproveShiftRequest = async (id: string) => {
+    setActionLoading((p) => ({ ...p, [id]: true }))
+    try {
+      await shiftService.approveRequest(id)
+      message.success('Đã duyệt yêu cầu ca')
+      fetchShiftRequests()
+    } catch (err: any) {
+      message.error(err?.response?.data?.message ?? 'Duyệt thất bại')
+    } finally {
+      setActionLoading((p) => ({ ...p, [id]: false }))
+    }
+  }
+
+  const openReject = (kind: 'leave' | 'correction' | 'shift', id: string) => {
     setRejectTarget({ kind, id })
     setRejectReason('')
   }
@@ -98,6 +127,10 @@ const StaffRequestsPage: React.FC = () => {
         await leaveRequestService.reject(id, rejectReason.trim())
         message.success('Đã từ chối đơn nghỉ phép')
         fetchLeaves()
+      } else if (kind === 'shift') {
+        await shiftService.rejectRequest(id, rejectReason.trim())
+        message.success('Đã từ chối yêu cầu ca')
+        fetchShiftRequests()
       } else {
         await attendanceService.rejectCorrection(id, rejectReason.trim())
         message.success('Đã từ chối yêu cầu bổ sung chấm công')
@@ -146,6 +179,32 @@ const StaffRequestsPage: React.FC = () => {
     },
   ]
 
+  const shiftRequestColumns: ColumnsType<ShiftChangeRequest> = [
+    { title: 'Nhân viên', render: (_, r) => r.user?.name ?? '—' },
+    {
+      title: 'Loại',
+      width: 110,
+      render: (_, r) => (r.type === 'REGISTER' ? <Tag color="blue">Đăng ký ca</Tag> : <Tag color="purple">Nhượng ca</Tag>),
+    },
+    { title: 'Ngày', render: (_, r) => fmtDate(r.workDate), width: 110 },
+    {
+      title: 'Ca',
+      width: 160,
+      render: (_, r) => (r.shift ? `${r.shift.name} (${r.shift.startTime}–${r.shift.endTime})` : '—'),
+    },
+    { title: 'Lý do', dataIndex: 'reason', ellipsis: true },
+    { title: 'Trạng thái', render: (_, r) => <Tag color={STATUS_COLOR[r.status]}>{STATUS_LABEL[r.status]}</Tag>, width: 110 },
+    {
+      title: '', width: 160,
+      render: (_, r) => r.status === 'PENDING' ? (
+        <div style={{ display: 'flex', gap: 6 }}>
+          <Button size="small" icon={<CheckOutlined />} style={{ color: '#389e0d' }} loading={actionLoading[r.id]} onClick={() => handleApproveShiftRequest(r.id)}>Duyệt</Button>
+          <Button size="small" danger icon={<CloseOutlined />} loading={actionLoading[r.id]} onClick={() => openReject('shift', r.id)}>Từ chối</Button>
+        </div>
+      ) : r.rejectReason ? <span style={{ color: '#aaa', fontSize: 12 }}>Lý do: {r.rejectReason}</span> : null,
+    },
+  ]
+
   return (
     <AppLayout role={user?.role ?? 'admin'} username={user?.name ?? ''} onLogout={handleLogout}>
       <PageHeader title="Yêu cầu nhân viên" />
@@ -162,7 +221,7 @@ const StaffRequestsPage: React.FC = () => {
             { value: 'ALL', label: 'Tất cả' },
           ]}
         />
-        <Button icon={<ReloadOutlined />} onClick={() => { fetchLeaves(); fetchCorrections() }} style={{ marginLeft: 8 }}>
+        <Button icon={<ReloadOutlined />} onClick={() => { fetchLeaves(); fetchCorrections(); fetchShiftRequests() }} style={{ marginLeft: 8 }}>
           Làm mới
         </Button>
       </div>
@@ -185,6 +244,15 @@ const StaffRequestsPage: React.FC = () => {
             children: (
               <div className={styles.tableWrap}>
                 <Table columns={correctionColumns} dataSource={corrections} rowKey="id" loading={correctionsLoading} pagination={{ pageSize: 20 }} size="small" />
+              </div>
+            ),
+          },
+          {
+            key: 'shift',
+            label: 'Đăng ký / nhượng ca',
+            children: (
+              <div className={styles.tableWrap}>
+                <Table columns={shiftRequestColumns} dataSource={shiftRequests} rowKey="id" loading={shiftRequestsLoading} pagination={{ pageSize: 20 }} size="small" />
               </div>
             ),
           },

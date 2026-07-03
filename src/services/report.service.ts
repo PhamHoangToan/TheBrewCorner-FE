@@ -11,4 +11,5 @@ export const reportService = {
   sales: (params?: DateRangeParams) => apiClient.get('/reports/sales', { params }),
   revenueByHour: (params?: DateRangeParams) => apiClient.get('/reports/revenue-by-hour', { params }),
   topProducts: (params?: DateRangeParams & { limit?: number }) => apiClient.get('/reports/top-products', { params }),
+  profit: (params?: DateRangeParams) => apiClient.get('/reports/profit', { params }),
 }

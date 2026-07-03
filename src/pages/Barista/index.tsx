@@ -35,7 +35,6 @@ const STATUS_OPTIONS = [
 ]
 
 const ACTIVE_ORDER_STATUSES = new Set(['SENT', 'PREPARING', 'READY'])
-const DONE_ITEM_STATUSES = new Set(['SERVED', 'RETURNED', 'CANCELLED'])
 
 const mapOrder = (item: any, idx: number): OrderCard => {
   const elapsedMin = item.createdAt ? dayjs().diff(dayjs(item.createdAt), 'minute') : 0
@@ -100,14 +99,10 @@ const BaristaHome: React.FC = () => {
     try {
       const res = await orderService.list({ limit: '100' })
       const all: any[] = res.data?.items ?? res.data ?? []
-      const active = all.filter((o: any) => {
-        if (ACTIVE_ORDER_STATUSES.has(o.status)) return true
-        // PAID nhưng còn item chưa phục vụ → barista vẫn cần làm
-        if (o.status === 'PAID') {
-          return (o.items ?? []).some((i: any) => !DONE_ITEM_STATUSES.has(i.status))
-        }
-        return false
-      })
+      // Trạng thái thanh toán nằm ở invoice — order.status thuần là tiến độ pha chế,
+      // 'PAID' nghĩa là đã phục vụ xong VÀ đã thanh toán → không còn việc cho barista.
+      // Đơn trả trước (invoice PAID nhưng chưa làm xong) vẫn ở SENT/PREPARING nên vào board bình thường.
+      const active = all.filter((o: any) => ACTIVE_ORDER_STATUSES.has(o.status))
       const mapped = active.map(mapOrder)
 
       const previous = knownOrderIds.current
@@ -203,37 +198,23 @@ const BaristaHome: React.FC = () => {
                 </div>
               ))}
               <div style={{ marginTop: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
-                {order.orderStatus === 'PAID' ? (
+                <Select
+                  value={order.orderStatus}
+                  size="small"
+                  style={{ flex: 1 }}
+                  options={STATUS_OPTIONS}
+                  onChange={(val) => updateOrderStatus(order.id, val)}
+                />
+                {order.orderStatus === 'READY' && (
                   <Button
                     size="small"
                     type="primary"
                     icon={<CheckOutlined />}
-                    style={{ background: '#499b6b', border: 'none', flex: 1 }}
+                    style={{ background: '#499b6b', border: 'none' }}
                     onClick={() => updateOrderStatus(order.id, 'SERVED')}
                   >
-                    Hoàn tất phục vụ
+                    Phục vụ
                   </Button>
-                ) : (
-                  <>
-                    <Select
-                      value={order.orderStatus}
-                      size="small"
-                      style={{ flex: 1 }}
-                      options={STATUS_OPTIONS}
-                      onChange={(val) => updateOrderStatus(order.id, val)}
-                    />
-                    {order.orderStatus === 'READY' && (
-                      <Button
-                        size="small"
-                        type="primary"
-                        icon={<CheckOutlined />}
-                        style={{ background: '#499b6b', border: 'none' }}
-                        onClick={() => updateOrderStatus(order.id, 'SERVED')}
-                      >
-                        Phục vụ
-                      </Button>
-                    )}
-                  </>
                 )}
               </div>
             </div>

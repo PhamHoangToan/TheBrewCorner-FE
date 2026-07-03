@@ -110,9 +110,9 @@ const Inventory: React.FC = () => {
     if (!record.id) { setData((p) => p.filter((d) => d.key !== record.key)); return }
     try {
       await ingredientService.remove(record.id)
-      message.success('Đã xóa nguyên vật liệu')
+      message.success('Đã ẩn nguyên vật liệu')
       fetchData()
-    } catch { message.error('Xóa thất bại') }
+    } catch { message.error('Ẩn thất bại') }
   }
 
   const handleOk = () => {

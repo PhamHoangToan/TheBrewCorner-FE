@@ -8,4 +8,6 @@ export const userService = {
   staffList: (params?: Parameters<typeof crud.list>[0]) => crud.list({ ...params, staffOnly: true }),
   changePassword: (id: string, data: { currentPassword: string; newPassword: string }) =>
     apiClient.patch(`/users/${id}/change-password`, data),
+  loyalty: (id: string) =>
+    apiClient.get<{ loyaltyPoints: number; totalSpent: number; membershipTier: string }>(`/users/${id}/loyalty`),
 }

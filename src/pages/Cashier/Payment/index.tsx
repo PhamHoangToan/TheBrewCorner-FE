@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Button, message, Radio, Spin } from 'antd'
-import { CopyOutlined, PrinterOutlined } from '@ant-design/icons'
+import { Button, Checkbox, InputNumber, message, Modal, Radio, Select, Spin } from 'antd'
+import { CopyOutlined, MergeCellsOutlined, PrinterOutlined, SplitCellsOutlined, StarFilled } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import AppLayout from '../../../components/common/AppLayout'
 import { useAuth } from '../../../hooks/useAuth'
 import { orderService } from '../../../services/order.service'
 import { invoiceService } from '../../../services/invoice.service'
 import { promotionService } from '../../../services/promotion.service'
+import { userService } from '../../../services/user.service'
 import { buildVietQRUrl, VIETQR_BANK } from '../../../config/vietqr'
 import styles from './payment.module.css'
 
@@ -30,7 +31,14 @@ interface OrderData {
   isAdditional: boolean
   status: string
   invoicePaid: boolean
+  customerId: string | null
 }
+
+const POINT_VALUE_VND = 500 // 1 điểm = 500đ — khớp BE (loyalty.util.ts)
+
+// Giảm tự động theo hạng thành viên — khớp TIER_DISCOUNT_PERCENT phía BE
+const TIER_DISCOUNT_PERCENT: Record<string, number> = { BASIC: 0, SILVER: 2, GOLD: 5 }
+const TIER_LABEL: Record<string, string> = { SILVER: 'Bạc', GOLD: 'Vàng' }
 
 interface Promo {
   id: string
@@ -77,6 +85,7 @@ const mapOrder = (data: any): OrderData => {
     isAdditional,
     status: data.status ?? '',
     invoicePaid: data.invoice?.status === 'PAID',
+    customerId: data.customerId ?? null,
   }
 }
 
@@ -102,6 +111,15 @@ const CashierPayment: React.FC = () => {
   const [paying, setPaying] = useState(false)
   const [paid, setPaid] = useState(false)
   const [paidRef, setPaidRef] = useState<{ code: string; table: string } | null>(null)
+  const [customerPoints, setCustomerPoints] = useState(0)
+  const [customerTier, setCustomerTier] = useState('BASIC')
+  const [redeemPoints, setRedeemPoints] = useState(0)
+  const [splitModalOpen, setSplitModalOpen] = useState(false)
+  const [splitSelected, setSplitSelected] = useState<string[]>([])
+  const [mergeModalOpen, setMergeModalOpen] = useState(false)
+  const [mergeSourceId, setMergeSourceId] = useState<string | null>(null)
+  const [mergeOptions, setMergeOptions] = useState<{ value: string; label: string }[]>([])
+  const [actionBusy, setActionBusy] = useState(false)
 
   const fetchOrder = useCallback(async (id: string) => {
     setLoadingOrder(true)
@@ -171,12 +189,95 @@ const CashierPayment: React.FC = () => {
     setSelectedPromo(null)
   }, [fetchPromotions, order?.id, order?.subtotal])
 
+  // Điểm tích lũy của khách (nếu order gắn với khách hàng thành viên)
+  useEffect(() => {
+    setCustomerPoints(0)
+    setCustomerTier('BASIC')
+    setRedeemPoints(0)
+    if (!order?.customerId) return
+    let mounted = true
+    userService.loyalty(order.customerId)
+      .then((res) => {
+        if (!mounted) return
+        setCustomerPoints(Number(res.data?.loyaltyPoints ?? 0))
+        setCustomerTier(String(res.data?.membershipTier ?? 'BASIC'))
+      })
+      .catch(() => { if (mounted) setCustomerPoints(0) })
+    return () => { mounted = false }
+  }, [order?.id, order?.customerId])
+
   const discount = selectedPromo && order
     ? (order.subtotal >= selectedPromo.minOrderAmount
       ? Math.round(order.subtotal * selectedPromo.discountPercent / 100)
       : 0)
     : 0
-  const grandTotal = order ? order.subtotal - discount : 0
+  const tierPercent = TIER_DISCOUNT_PERCENT[customerTier] ?? 0
+  const tierDiscount = order ? Math.round((order.subtotal * tierPercent) / 100) : 0
+  const maxRedeemPoints = order
+    ? Math.min(customerPoints, Math.floor(Math.max(order.subtotal - discount - tierDiscount, 0) / POINT_VALUE_VND))
+    : 0
+  const appliedRedeemPoints = Math.min(redeemPoints, maxRedeemPoints)
+  const redeemValue = appliedRedeemPoints * POINT_VALUE_VND
+  const grandTotal = order ? Math.max(order.subtotal - discount - tierDiscount - redeemValue, 0) : 0
+
+  const openMergeModal = async () => {
+    if (!order) return
+    setMergeSourceId(null)
+    setMergeModalOpen(true)
+    try {
+      const res = await orderService.list({ limit: '100' })
+      const items: any[] = res.data?.items ?? []
+      setMergeOptions(items
+        .filter((o: any) => o.id !== order.id && o.status !== 'CANCELLED' && o.status !== 'PAID' && o.invoice?.status !== 'PAID')
+        .map((o: any) => ({
+          value: o.id,
+          label: `${o.table?.name ?? 'Mang về'} — ${o.code} (${toNum(o.totalAmount).toLocaleString('vi-VN')}đ)`,
+        })))
+    } catch {
+      setMergeOptions([])
+    }
+  }
+
+  const handleSplit = async () => {
+    if (!order || splitSelected.length === 0) {
+      message.warning('Chọn ít nhất 1 món để tách')
+      return
+    }
+    if (splitSelected.length === order.items.length) {
+      message.warning('Không thể tách toàn bộ món — phải để lại ít nhất 1 món')
+      return
+    }
+    setActionBusy(true)
+    try {
+      await orderService.split(order.id, splitSelected)
+      message.success('Đã tách bill — order mới xuất hiện trong danh sách thanh toán')
+      setSplitModalOpen(false)
+      setSplitSelected([])
+      fetchOrder(order.id)
+    } catch (err: any) {
+      message.error(err?.response?.data?.message ?? 'Tách bill thất bại')
+    } finally {
+      setActionBusy(false)
+    }
+  }
+
+  const handleMerge = async () => {
+    if (!order || !mergeSourceId) {
+      message.warning('Chọn order muốn gộp vào')
+      return
+    }
+    setActionBusy(true)
+    try {
+      await orderService.merge(order.id, mergeSourceId)
+      message.success('Đã gộp order')
+      setMergeModalOpen(false)
+      fetchOrder(order.id)
+    } catch (err: any) {
+      message.error(err?.response?.data?.message ?? 'Gộp order thất bại')
+    } finally {
+      setActionBusy(false)
+    }
+  }
 
   const handlePay = async () => {
     if (!order) return
@@ -191,8 +292,9 @@ const CashierPayment: React.FC = () => {
         cashierId: user?.id,
         promotionId: selectedPromo?.id ?? null,
         subtotal: order.subtotal,
-        discountAmount: discount,
+        discountAmount: discount + tierDiscount + redeemValue,
         totalAmount: grandTotal,
+        redeemPoints: appliedRedeemPoints > 0 ? appliedRedeemPoints : undefined,
       })
       const invoiceId = (invRes.data as { id?: string } | undefined)?.id
       if (invoiceId) {
@@ -274,6 +376,30 @@ const CashierPayment: React.FC = () => {
                   ))}
                 </Radio.Group>
               </div>
+              {order?.customerId && customerPoints > 0 && (
+                <div style={{ padding: '8px 12px' }}>
+                  <div style={{ fontSize: 13, marginBottom: 6, fontWeight: 600 }}>
+                    <StarFilled style={{ color: '#faad14', marginRight: 4 }} />
+                    Điểm tích lũy của khách: {customerPoints.toLocaleString('vi-VN')} điểm
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <InputNumber
+                      min={0}
+                      max={maxRedeemPoints}
+                      value={redeemPoints}
+                      onChange={(v) => setRedeemPoints(Math.min(Math.max(Math.floor(Number(v ?? 0)), 0), maxRedeemPoints))}
+                      style={{ flex: 1 }}
+                      placeholder="Số điểm dùng"
+                    />
+                    <Button size="small" style={{ height: 32 }} onClick={() => setRedeemPoints(maxRedeemPoints)}>
+                      Tối đa
+                    </Button>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+                    1 điểm = {POINT_VALUE_VND.toLocaleString('vi-VN')}đ — tối đa {maxRedeemPoints.toLocaleString('vi-VN')} điểm cho đơn này
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -368,6 +494,18 @@ const CashierPayment: React.FC = () => {
                   <span>Giảm giá {selectedPromo ? `(${selectedPromo.discountPercent}%)` : ''}</span>
                   <span>{discount > 0 ? `- ${discount.toLocaleString('vi-VN')} VND` : '0 VND'}</span>
                 </div>
+                {tierDiscount > 0 && (
+                  <div className={styles.totalLine}>
+                    <span>Thành viên hạng {TIER_LABEL[customerTier] ?? customerTier} (-{tierPercent}%)</span>
+                    <span>- {tierDiscount.toLocaleString('vi-VN')} VND</span>
+                  </div>
+                )}
+                {redeemValue > 0 && (
+                  <div className={styles.totalLine}>
+                    <span>Điểm tích lũy ({appliedRedeemPoints.toLocaleString('vi-VN')} điểm)</span>
+                    <span>- {redeemValue.toLocaleString('vi-VN')} VND</span>
+                  </div>
+                )}
                 <div className={`${styles.totalLine} ${styles.grandTotal}`}>
                   <span>Tổng thanh toán</span>
                   <span>{grandTotal.toLocaleString('vi-VN')} VND</span>
@@ -440,6 +578,16 @@ const CashierPayment: React.FC = () => {
 
               <div className={styles.actionsRow}>
                 <Button className={styles.btnBack} onClick={() => navigate(-1)}>Quay lại</Button>
+                <Button
+                  icon={<SplitCellsOutlined />}
+                  disabled={order.items.length < 2}
+                  onClick={() => { setSplitSelected([]); setSplitModalOpen(true) }}
+                >
+                  Tách bill
+                </Button>
+                <Button icon={<MergeCellsOutlined />} onClick={openMergeModal}>
+                  Gộp bàn
+                </Button>
                 <Button className={styles.btnPay} loading={paying} onClick={handlePay}>
                   {paymentMethod === 'BANK_TRANSFER' ? 'Đã nhận tiền ✓' : 'Thanh toán'}
                 </Button>
@@ -448,6 +596,58 @@ const CashierPayment: React.FC = () => {
           )}
         </div>
       </div>
+
+      <Modal
+        title="Tách bill — chọn món chuyển sang bill mới"
+        open={splitModalOpen}
+        onOk={handleSplit}
+        onCancel={() => setSplitModalOpen(false)}
+        okText="Tách bill"
+        cancelText="Hủy"
+        confirmLoading={actionBusy}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, margin: '16px 0' }}>
+          {order?.items.map((item) => (
+            <Checkbox
+              key={item.id}
+              checked={splitSelected.includes(item.id)}
+              onChange={(e) => {
+                setSplitSelected((prev) =>
+                  e.target.checked ? [...prev, item.id] : prev.filter((id) => id !== item.id))
+              }}
+            >
+              {item.name} × {item.qty} — {item.total.toLocaleString('vi-VN')}đ
+            </Checkbox>
+          ))}
+        </div>
+        <div style={{ fontSize: 12, color: '#888' }}>
+          Món được chọn sẽ chuyển sang một order mới cùng bàn để thanh toán riêng. Phải để lại ít nhất 1 món.
+        </div>
+      </Modal>
+
+      <Modal
+        title="Gộp order khác vào order này"
+        open={mergeModalOpen}
+        onOk={handleMerge}
+        onCancel={() => setMergeModalOpen(false)}
+        okText="Gộp"
+        cancelText="Hủy"
+        confirmLoading={actionBusy}
+      >
+        <div style={{ margin: '16px 0' }}>
+          <Select
+            style={{ width: '100%' }}
+            placeholder="Chọn order muốn gộp vào order hiện tại"
+            value={mergeSourceId}
+            onChange={setMergeSourceId}
+            options={mergeOptions}
+            notFoundContent="Không có order nào khác đang hoạt động"
+          />
+        </div>
+        <div style={{ fontSize: 12, color: '#888' }}>
+          Toàn bộ món của order được chọn sẽ chuyển vào order hiện tại; order kia bị hủy và bàn của nó (nếu trống) sẽ trở về trạng thái trống.
+        </div>
+      </Modal>
     </AppLayout>
   )
 }

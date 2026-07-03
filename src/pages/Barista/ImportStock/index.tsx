@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, DatePicker, Form, Input, InputNumber, message, Select } from 'antd'
+import { AutoComplete, Button, DatePicker, Form, Input, InputNumber, message, Select } from 'antd'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import AppLayout from '../../../components/common/AppLayout'
 import { useAuth } from '../../../hooks/useAuth'
 import { ingredientService } from '../../../services/ingredient.service'
+import { supplierService } from '../../../services/supplier.service'
 import styles from './importStock.module.css'
 
 interface ItemRow {
@@ -48,7 +49,15 @@ const BaristaImportStock: React.FC = () => {
     } catch { /* giữ trống */ }
   }, [])
 
-  useEffect(() => { fetchIngredients() }, [fetchIngredients])
+  const [supplierOptions, setSupplierOptions] = useState<{ value: string }[]>([])
+  const fetchSuppliers = useCallback(async () => {
+    try {
+      const res = await supplierService.list({ limit: 200 })
+      setSupplierOptions((res.data?.items ?? []).map((s) => ({ value: s.name })))
+    } catch { /* giữ trống — vẫn nhập tay được */ }
+  }, [])
+
+  useEffect(() => { fetchIngredients(); fetchSuppliers() }, [fetchIngredients, fetchSuppliers])
 
   const addRow = () => setItems((prev) => [...prev, { id: _nextId++, ingredientId: '', tennvl: '', soluong: null, donvi: '', dongia: null }])
 
@@ -114,7 +123,11 @@ const BaristaImportStock: React.FC = () => {
               <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
             </Form.Item>
             <Form.Item label="Nhà cung cấp" name="nhacungcap" rules={[{ required: true, message: 'Nhập tên nhà cung cấp' }]}>
-              <Input placeholder="Tên nhà cung cấp" />
+              <AutoComplete
+                options={supplierOptions}
+                placeholder="Chọn hoặc nhập tên nhà cung cấp mới"
+                filterOption={(input, opt) => (opt?.value ?? '').toLowerCase().includes(input.toLowerCase())}
+              />
             </Form.Item>
           </Form>
 

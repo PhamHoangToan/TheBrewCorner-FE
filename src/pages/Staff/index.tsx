@@ -149,10 +149,10 @@ const Staff: React.FC = () => {
     const toDelete = data.filter((d) => selected.includes(d.key))
     try {
       await Promise.all(toDelete.filter((d) => d.id).map((d) => userService.remove(d.id!)))
-      message.success('Đã xóa nhân viên')
+      message.success('Đã ẩn nhân viên')
       setSelected([])
       fetchData()
-    } catch { message.error('Xóa thất bại') }
+    } catch { message.error('Ẩn thất bại') }
   }
 
   const handleOk = () => {
@@ -272,9 +272,9 @@ const Staff: React.FC = () => {
             onClick={async () => {
               try {
                 if (record.id) await userService.remove(record.id)
-                message.success('Đã xóa')
+                message.success('Đã ẩn')
                 fetchData()
-              } catch { message.error('Xóa thất bại') }
+              } catch { message.error('Ẩn thất bại') }
             }}
           />
         </div>
@@ -289,7 +289,7 @@ const Staff: React.FC = () => {
       <div className={styles.toolbar}>
         <Button type="primary" icon={<PlusOutlined />} className={styles.btnAdd} onClick={openAdd}>Thêm</Button>
         <Button icon={<EditOutlined />} disabled={selected.length !== 1} onClick={openEdit}>Sửa</Button>
-        <Button danger icon={<DeleteOutlined />} disabled={selected.length === 0} onClick={handleDelete}>Xóa</Button>
+        <Button danger icon={<DeleteOutlined />} disabled={selected.length === 0} onClick={handleDelete}>Ẩn</Button>
       </div>
 
       <Table

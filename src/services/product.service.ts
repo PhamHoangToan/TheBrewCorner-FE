@@ -24,4 +24,10 @@ export const productService = {
     apiClient.get<RecipeItem[]>(`/products/${productId}/recipes`),
   setRecipes: (productId: string, items: RecipeItemInput[]) =>
     apiClient.put<RecipeItem[]>(`/products/${productId}/recipes`, { items }),
+  setSoldOut: (productId: string, soldOut: boolean) =>
+    apiClient.patch(`/products/${productId}/sold-out`, { soldOut }),
 }
+
+// Món đang báo hết hàng trong ngày (86 list)?
+export const isSoldOut = (soldOutUntil?: string | null) =>
+  !!soldOutUntil && new Date(soldOutUntil).getTime() > Date.now()

@@ -4,7 +4,7 @@ import { Input, message, Select } from 'antd'
 import { CloseOutlined, SearchOutlined } from '@ant-design/icons'
 import AppLayout from '../../../components/common/AppLayout'
 import { useAuth } from '../../../hooks/useAuth'
-import { productService } from '../../../services/product.service'
+import { isSoldOut, productService } from '../../../services/product.service'
 import { tableService } from '../../../services/table.service'
 import { orderService } from '../../../services/order.service'
 import styles from './orderList.module.css'
@@ -20,6 +20,7 @@ interface Product {
   imageUrl?: string
   ingredients: string[]
   recipes?: { quantity: number; unit: string; ingredient: { name: string } }[]
+  soldOutUntil?: string | null
 }
 
 interface CartItem extends Product {
@@ -82,6 +83,7 @@ const WaiterOrderList: React.FC = () => {
         imageUrl: p.imageUrl ?? p.anhUrl,
         ingredients: (p.recipes ?? []).map((r: any) => r.ingredient?.name ?? '').filter(Boolean),
         recipes: p.recipes ?? [],
+        soldOutUntil: p.soldOutUntil ?? null,
       }))
       const cats = [...new Set(mapped.map((p) => p.category))]
       setProducts(mapped)
@@ -185,8 +187,24 @@ const WaiterOrderList: React.FC = () => {
           </div>
 
           <div className={styles.productGrid}>
-            {filteredProducts.map((p) => (
-              <div key={p.id} className={styles.productCard} onClick={() => setSelectedProduct(p)}>
+            {filteredProducts.map((p) => {
+              const soldOut = isSoldOut(p.soldOutUntil)
+              return (
+              <div
+                key={p.id}
+                className={styles.productCard}
+                onClick={() => { if (!soldOut) setSelectedProduct(p) }}
+                style={soldOut ? { opacity: 0.45, cursor: 'not-allowed', position: 'relative' } : undefined}
+              >
+                {soldOut && (
+                  <div style={{
+                    position: 'absolute', top: 8, right: 8, zIndex: 1,
+                    background: '#cf1322', color: '#fff', fontSize: 11, fontWeight: 700,
+                    padding: '2px 8px', borderRadius: 10,
+                  }}>
+                    Hết hàng
+                  </div>
+                )}
                 <div className={styles.productImg}>
                   {p.imageUrl && !brokenImgs.has(p.id) ? (
                     <img
@@ -209,7 +227,8 @@ const WaiterOrderList: React.FC = () => {
                 )}
                 <div className={styles.productPrice}>{p.price.toLocaleString('vi-VN')}đ</div>
               </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 

@@ -37,6 +37,8 @@ const Reservations = lazy(() => import('../pages/Reservations'))
 const StaffRequests = lazy(() => import('../pages/StaffRequests'))
 const ChangePassword = lazy(() => import('../pages/ChangePassword'))
 const ActivityLog = lazy(() => import('../pages/ActivityLog'))
+const Trash = lazy(() => import('../pages/Trash'))
+const Suppliers = lazy(() => import('../pages/Suppliers'))
 
 const fallback = (
   <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80 }}>
@@ -273,6 +275,22 @@ const AppRouter: React.FC = () => (
             element={
               <RoleRoute roles={['admin']}>
                 <ActivityLog />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/trash"
+            element={
+              <RoleRoute roles={['admin']}>
+                <Trash />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/suppliers"
+            element={
+              <RoleRoute roles={['admin']}>
+                <Suppliers />
               </RoleRoute>
             }
           />

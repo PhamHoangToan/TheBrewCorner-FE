@@ -64,9 +64,9 @@ const CategoryList: React.FC = () => {
     if (!record.id) { setData((p) => p.filter((d) => d.key !== record.key)); return }
     try {
       await categoryService.remove(record.id)
-      message.success('Đã xóa danh mục')
+      message.success('Đã ẩn danh mục')
       fetchData()
-    } catch { message.error('Xóa thất bại') }
+    } catch { message.error('Ẩn thất bại') }
   }
 
   const handleOk = () => {

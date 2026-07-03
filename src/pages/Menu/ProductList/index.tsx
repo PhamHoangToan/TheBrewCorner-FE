@@ -6,7 +6,7 @@ import type { UploadFile } from 'antd/es/upload'
 import AppLayout from '../../../components/common/AppLayout'
 import PageHeader from '../../../components/common/PageHeader'
 import { useAuth } from '../../../hooks/useAuth'
-import { productService } from '../../../services/product.service'
+import { isSoldOut, productService } from '../../../services/product.service'
 import { categoryService } from '../../../services/category.service'
 import { uploadService } from '../../../services/upload.service'
 import styles from './productList.module.css'
@@ -22,6 +22,7 @@ interface Product {
   gia: number
   anhUrl?: string
   ingredients: string[]
+  soldOutUntil?: string | null
 }
 
 const MOCK_DATA: Product[] = [
@@ -50,6 +51,7 @@ const mapItem = (item: any, idx: number): Product => ({
   gia: Number(item.price ?? item.gia ?? 0),
   anhUrl: item.imageUrl ?? item.anhUrl,
   ingredients: (item.recipes ?? []).map((r: any) => r.ingredient?.name ?? '').filter(Boolean),
+  soldOutUntil: item.soldOutUntil ?? null,
 })
 
 const ProductList: React.FC = () => {
@@ -117,11 +119,11 @@ const ProductList: React.FC = () => {
     const toDelete = data.filter((d) => selected.includes(d.key))
     try {
       await Promise.all(toDelete.filter((d) => d.id).map((d) => productService.remove(d.id!)))
-      message.success('Đã xóa món')
+      message.success('Đã ẩn món')
       setSelected([])
       fetchData()
     } catch {
-      message.error('Xóa thất bại')
+      message.error('Ẩn thất bại')
     }
   }
 
@@ -191,6 +193,35 @@ const ProductList: React.FC = () => {
       width: 130,
       render: (v: number) => `${v.toLocaleString('vi-VN')} đ`,
     },
+    {
+      title: 'Hôm nay',
+      key: 'soldOut',
+      align: 'center',
+      width: 150,
+      render: (_, record) => {
+        const soldOut = isSoldOut(record.soldOutUntil)
+        return (
+          <Button
+            size="small"
+            danger={!soldOut}
+            type={soldOut ? 'default' : 'primary'}
+            style={soldOut ? undefined : { background: '#fff1f0', borderColor: '#ffa39e', color: '#cf1322' }}
+            onClick={async () => {
+              if (!record.id) return
+              try {
+                await productService.setSoldOut(record.id, !soldOut)
+                message.success(soldOut ? `"${record.tenmon}" đã bán lại` : `"${record.tenmon}" báo hết hàng hôm nay`)
+                fetchData()
+              } catch {
+                message.error('Cập nhật thất bại')
+              }
+            }}
+          >
+            {soldOut ? '↩ Bán lại' : 'Hết hàng hôm nay'}
+          </Button>
+        )
+      },
+    },
   ]
 
   return (
@@ -200,7 +231,7 @@ const ProductList: React.FC = () => {
       <div className={styles.toolbar}>
         <Button className={styles.btnAdd} icon={<PlusOutlined />} onClick={openAdd}>Thêm</Button>
         <Button className={styles.btnEdit} icon={<EditOutlined />} disabled={selected.length !== 1} onClick={openEdit}>Sửa</Button>
-        <Button danger icon={<DeleteOutlined />} disabled={selected.length === 0} onClick={handleDelete}>Xóa</Button>
+        <Button danger icon={<DeleteOutlined />} disabled={selected.length === 0} onClick={handleDelete}>Ẩn</Button>
       </div>
 
       <Table

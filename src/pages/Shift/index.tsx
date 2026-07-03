@@ -124,7 +124,7 @@ const Shift: React.FC = () => {
   const handleDelete = async (id?: string, key?: string) => {
     try {
       if (id) await shiftService.removeAssignment(id)
-      message.success('Đã xóa ca làm việc')
+      message.success('Đã ẩn ca làm việc')
       fetchData()
     } catch {
       setData((prev) => prev.filter((d) => d.key !== key))

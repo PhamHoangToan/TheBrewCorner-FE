@@ -30,6 +30,25 @@ interface HourRow {
   orderCount: number
 }
 
+interface ProfitRow {
+  key: string
+  tenmon: string
+  giaban: number
+  giavon: number
+  bienloinhuan: number
+  bienloinhuanPct: number
+  hasRecipe: boolean
+  soluongban: number
+  doanhthu: number
+  loinhuan: number
+}
+
+interface ProfitSummary {
+  totalRevenue: number
+  totalCost: number
+  totalProfit: number
+}
+
 const fmtVnd = (v: number) => v.toLocaleString('vi-VN')
 
 const revenueColumns: ColumnsType<RevenueRow> = [
@@ -43,22 +62,59 @@ const salesColumns: ColumnsType<SalesRow> = [
   { title: 'Doanh thu (VND)', dataIndex: 'doanhthu', key: 'doanhthu', align: 'right', render: fmtVnd },
 ]
 
+const profitColumns: ColumnsType<ProfitRow> = [
+  { title: 'Tên món', dataIndex: 'tenmon', key: 'tenmon' },
+  { title: 'Giá bán', dataIndex: 'giaban', key: 'giaban', align: 'right', render: fmtVnd },
+  {
+    title: 'Giá vốn',
+    dataIndex: 'giavon',
+    key: 'giavon',
+    align: 'right',
+    render: (v: number, r) => (r.hasRecipe ? fmtVnd(v) : <span style={{ color: '#ccc' }}>chưa có công thức</span>),
+  },
+  {
+    title: 'Biên LN',
+    dataIndex: 'bienloinhuanPct',
+    key: 'bienloinhuanPct',
+    align: 'center',
+    render: (v: number, r) =>
+      r.hasRecipe ? (
+        <span style={{ color: v >= 50 ? '#389e0d' : v >= 20 ? '#d48806' : '#cf1322', fontWeight: 600 }}>{v}%</span>
+      ) : '—',
+  },
+  { title: 'Đã bán', dataIndex: 'soluongban', key: 'soluongban', align: 'center' },
+  { title: 'Doanh thu', dataIndex: 'doanhthu', key: 'doanhthu', align: 'right', render: fmtVnd },
+  {
+    title: 'Lợi nhuận',
+    dataIndex: 'loinhuan',
+    key: 'loinhuan',
+    align: 'right',
+    render: (v: number, r) =>
+      r.hasRecipe ? (
+        <strong style={{ color: v >= 0 ? '#389e0d' : '#cf1322' }}>{fmtVnd(v)}</strong>
+      ) : '—',
+  },
+]
+
 const Reports: React.FC = () => {
   const { user, handleLogout } = useAuth()
   const [range, setRange] = useState<[Dayjs, Dayjs]>([dayjs().subtract(30, 'day'), dayjs()])
   const [revenueRows, setRevenueRows] = useState<RevenueRow[]>([])
   const [salesRows, setSalesRows] = useState<SalesRow[]>([])
   const [hourRows, setHourRows] = useState<HourRow[]>([])
+  const [profitRows, setProfitRows] = useState<ProfitRow[]>([])
+  const [profitSummary, setProfitSummary] = useState<ProfitSummary | null>(null)
   const [loading, setLoading] = useState(false)
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
     const params = { startDate: range[0].format('YYYY-MM-DD'), endDate: range[1].format('YYYY-MM-DD') }
     try {
-      const [revenueRes, salesRes, hourRes] = await Promise.all([
+      const [revenueRes, salesRes, hourRes, profitRes] = await Promise.all([
         reportService.revenue(params),
         reportService.sales(params),
         reportService.revenueByHour(params),
+        reportService.profit(params),
       ])
       const revenueItems: any[] = (revenueRes.data as any) ?? []
       setRevenueRows(revenueItems.map((r, idx) => ({
@@ -77,10 +133,27 @@ const Reports: React.FC = () => {
 
       const hourItems: any[] = (hourRes.data as any) ?? []
       setHourRows(hourItems)
+
+      const profitData: any = profitRes.data ?? {}
+      setProfitRows(((profitData.items as any[]) ?? []).map((p) => ({
+        key: p.productId,
+        tenmon: p.name,
+        giaban: Number(p.price),
+        giavon: Number(p.cost),
+        bienloinhuan: Number(p.margin),
+        bienloinhuanPct: Number(p.marginPercent),
+        hasRecipe: !!p.hasRecipe,
+        soluongban: Number(p.soldQty),
+        doanhthu: Number(p.revenue),
+        loinhuan: Number(p.profit),
+      })))
+      setProfitSummary(profitData.summary ?? null)
     } catch {
       setRevenueRows([])
       setSalesRows([])
       setHourRows([])
+      setProfitRows([])
+      setProfitSummary(null)
     } finally {
       setLoading(false)
     }
@@ -123,6 +196,38 @@ const Reports: React.FC = () => {
                 </div>
                 <div className={styles.tableWrap}>
                   <Table columns={salesColumns} dataSource={salesRows} loading={loading} pagination={{ pageSize: 10 }} />
+                </div>
+              </>
+            ),
+          },
+          {
+            key: 'loinhuan',
+            label: 'Lợi nhuận',
+            children: (
+              <>
+                <div className={styles.filterRow}>
+                  <RangePicker format="DD/MM/YYYY" value={range} onChange={handleRangeChange} />
+                </div>
+                {profitSummary && (
+                  <div style={{ display: 'flex', gap: 24, margin: '16px 0', flexWrap: 'wrap' }}>
+                    <div style={{ background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 8, padding: '12px 20px' }}>
+                      <div style={{ fontSize: 12, color: '#888' }}>Doanh thu</div>
+                      <div style={{ fontSize: 20, fontWeight: 700 }}>{fmtVnd(profitSummary.totalRevenue)} đ</div>
+                    </div>
+                    <div style={{ background: '#fff7e6', border: '1px solid #ffd591', borderRadius: 8, padding: '12px 20px' }}>
+                      <div style={{ fontSize: 12, color: '#888' }}>Giá vốn (COGS)</div>
+                      <div style={{ fontSize: 20, fontWeight: 700 }}>{fmtVnd(profitSummary.totalCost)} đ</div>
+                    </div>
+                    <div style={{ background: '#e6f4ff', border: '1px solid #91caff', borderRadius: 8, padding: '12px 20px' }}>
+                      <div style={{ fontSize: 12, color: '#888' }}>Lợi nhuận gộp</div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: profitSummary.totalProfit >= 0 ? '#389e0d' : '#cf1322' }}>
+                        {fmtVnd(profitSummary.totalProfit)} đ
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className={styles.tableWrap}>
+                  <Table columns={profitColumns} dataSource={profitRows} loading={loading} pagination={{ pageSize: 10 }} />
                 </div>
               </>
             ),
