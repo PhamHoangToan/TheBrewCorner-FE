@@ -38,12 +38,15 @@ const ROLE_LABEL: Record<string, string> = {
   WAITER: 'Phục vụ', waiter: 'Phục vụ',
 }
 
-// Ca chưa tới ngày (SCHEDULED và ngày làm ở tương lai) → để trống, không suy đoán trạng thái.
-// Đã tới ngày: có dữ liệu chấm công (COMPLETED/IN_PROGRESS) → "Đang làm"; không có (ABSENT) → "Vắng mặt".
+// ABSENT (kể cả nghỉ phép duyệt trước cho ca tương lai) luôn ưu tiên hiện "Vắng mặt".
+// Ca chưa tới ngày còn lại → để trống, không suy đoán trạng thái.
+// Đã tới ngày: có dữ liệu chấm công (COMPLETED/IN_PROGRESS) → "Đang làm";
+// còn SCHEDULED (chưa ai cập nhật, không có chấm công) → "Vắng mặt".
 const mapStatus = (rawStatus: string, workDate?: string): Shift['trangThai'] => {
-  const isFuture = workDate ? dayjs(workDate).startOf('day').isAfter(dayjs().startOf('day')) : false
-  if (isFuture || rawStatus === 'SCHEDULED') return ''
   if (rawStatus === 'ABSENT' || rawStatus === 'Vắng mặt') return 'Vắng mặt'
+  const isFuture = workDate ? dayjs(workDate).startOf('day').isAfter(dayjs().startOf('day')) : false
+  if (isFuture) return ''
+  if (rawStatus === 'SCHEDULED') return 'Vắng mặt'
   return 'Đang làm'
 }
 
@@ -69,6 +72,16 @@ const isPaidLeaveNote = (note?: string) => {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
   return normalized.includes('phep') || normalized.includes('paid leave') || /\bleave\b/.test(normalized)
+}
+
+// Ca da nhuong lai (SWAP duoc duyet) - BE giu record (ABSENT + note) thay vi xoa mem,
+// de admin con thay va biet can phan nguoi thay.
+const isSwapReleasedNote = (note?: string) => {
+  const normalized = String(note ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+  return normalized.includes('nhuong ca')
 }
 
 const Shift: React.FC = () => {
@@ -186,7 +199,9 @@ const Shift: React.FC = () => {
       width: 140,
       render: (note?: string) => isPaidLeaveNote(note)
         ? <Tag color="blue">{note}</Tag>
-        : (note || '—'),
+        : isSwapReleasedNote(note)
+          ? <Tag color="orange">{note}</Tag>
+          : (note || '—'),
     },
     {
       title: 'Trạng thái',
@@ -195,6 +210,8 @@ const Shift: React.FC = () => {
       width: 130,
       render: (v: string, record) => v === '' ? (
         <span style={{ color: '#aaa' }}>— Chưa tới ngày</span>
+      ) : isSwapReleasedNote(record.note) ? (
+        <Tag color="orange">Cần người thay</Tag>
       ) : (
         <Select
           value={v}
