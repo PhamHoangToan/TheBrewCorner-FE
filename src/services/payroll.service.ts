@@ -47,12 +47,21 @@ export interface PayrollDetail extends PayrollSummary {
   days: PayrollDay[]
 }
 
+// Trả về từ GET /payroll/user/:userId — mỗi tháng kèm tổng hợp sẵn để vẽ biểu đồ xu hướng.
+export interface PayrollHistoryItem extends PayrollSummary {
+  days: PayrollDay[]
+  totalLateMinutes: number
+  totalEarlyMinutes: number
+  totalOtMinutes: number
+  totalPenaltyAmount: number
+}
+
 export const payrollService = {
   list: (params?: Record<string, string | number | undefined>) =>
     apiClient.get<{ items: PayrollSummary[]; total: number }>('/payroll', { params }),
 
   historyByUser: (userId: string) =>
-    apiClient.get<PayrollSummary[]>(`/payroll/user/${userId}`),
+    apiClient.get<PayrollHistoryItem[]>(`/payroll/user/${userId}`),
 
   getByUserMonth: (userId: string, year: number, month: number) =>
     apiClient.get<PayrollDetail>(`/payroll/user/${userId}/${year}/${month}`),

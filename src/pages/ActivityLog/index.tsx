@@ -3,10 +3,11 @@ import { Button, DatePicker, Select, Table, Tag } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs, { Dayjs } from 'dayjs'
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import AppLayout from '../../components/common/AppLayout'
 import PageHeader from '../../components/common/PageHeader'
 import { useAuth } from '../../hooks/useAuth'
-import { activityLogService, type ActivityLog } from '../../services/activityLog.service'
+import { activityLogService, type ActivityLog, type ActivityLogStats } from '../../services/activityLog.service'
 import { userService } from '../../services/user.service'
 import styles from './activityLog.module.css'
 
@@ -50,6 +51,7 @@ const ActivityLogPage: React.FC = () => {
   const [userId, setUserId] = useState<string | undefined>()
   const [moduleFilter, setModuleFilter] = useState<string | undefined>()
   const [range, setRange] = useState<[Dayjs, Dayjs] | null>(null)
+  const [stats, setStats] = useState<ActivityLogStats | null>(null)
 
   const fetchStaff = useCallback(async () => {
     try {
@@ -79,8 +81,18 @@ const ActivityLogPage: React.FC = () => {
     }
   }, [page, userId, moduleFilter, range])
 
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await activityLogService.stats(
+        range ? { from: range[0].startOf('day').toISOString(), to: range[1].endOf('day').toISOString() } : undefined,
+      )
+      setStats(res.data ?? null)
+    } catch { setStats(null) }
+  }, [range])
+
   useEffect(() => { fetchStaff() }, [fetchStaff])
   useEffect(() => { fetchData() }, [fetchData])
+  useEffect(() => { fetchStats() }, [fetchStats])
 
   const columns: ColumnsType<ActivityLog> = [
     {
@@ -155,6 +167,35 @@ const ActivityLogPage: React.FC = () => {
         />
         <Button icon={<ReloadOutlined />} onClick={fetchData}>Làm mới</Button>
       </div>
+
+      {stats && (stats.byUser.length > 0 || stats.byHour.some((h) => h.count > 0)) && (
+        <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
+          <div className={styles.tableWrap} style={{ flex: '1 1 360px', padding: 16 }}>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>Top 10 người thao tác nhiều nhất</div>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={stats.byUser.map((u) => ({ name: u.userName ?? 'Không xác định', count: u.count }))} layout="vertical" margin={{ left: 24 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" fontSize={12} allowDecimals={false} />
+                <YAxis type="category" dataKey="name" width={120} fontSize={12} />
+                <Tooltip />
+                <Bar dataKey="count" fill="#662c21" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className={styles.tableWrap} style={{ flex: '1 1 360px', padding: 16 }}>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>Khung giờ hoạt động cao điểm</div>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={stats.byHour.map((h) => ({ hour: `${h.hour}h`, count: h.count }))}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="hour" fontSize={11} interval={1} />
+                <YAxis fontSize={12} allowDecimals={false} />
+                <Tooltip />
+                <Bar dataKey="count" fill="#d48806" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       <div className={styles.tableWrap}>
         <Table

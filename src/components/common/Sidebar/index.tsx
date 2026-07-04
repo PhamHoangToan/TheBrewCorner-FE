@@ -17,8 +17,10 @@ import {
   HistoryOutlined,
   InboxOutlined,
   LeftOutlined,
+  MessageOutlined,
   ScheduleOutlined,
   ShoppingCartOutlined,
+  StarOutlined,
   TableOutlined,
   TeamOutlined,
 } from '@ant-design/icons'
@@ -51,6 +53,8 @@ const MENU_BY_ROLE: Record<Role, MenuItem[]> = {
     { key: '/payroll',         label: 'Bảng lương',      icon: <DollarOutlined /> },
     { key: '/promotions',      label: 'Khuyến mãi',      icon: <GiftOutlined /> },
     { key: '/campaigns',       label: 'Marketing',       icon: <GiftOutlined /> },
+    { key: '/reviews',         label: 'Đánh giá',        icon: <StarOutlined /> },
+    { key: '/support-chat',    label: 'Chat hỗ trợ',     icon: <MessageOutlined /> },
     { key: '/reservations',    label: 'Đặt bàn trước',   icon: <ScheduleOutlined /> },
     { key: '/activity-logs',   label: 'Nhật ký hoạt động', icon: <HistoryOutlined /> },
     { key: '/trash',           label: 'Đã ẩn',           icon: <DeleteOutlined /> },
@@ -61,6 +65,7 @@ const MENU_BY_ROLE: Record<Role, MenuItem[]> = {
     { key: '/cashier/order',    label: 'Đặt hàng',  icon: <ShoppingCartOutlined /> },
     { key: '/cashier/payment',  label: 'Thanh toán', icon: <DollarOutlined /> },
     { key: '/cashier/finance',  label: 'Thu chi',    icon: <BarChartOutlined /> },
+    { key: '/support-chat',     label: 'Chat hỗ trợ', icon: <MessageOutlined /> },
   ],
   barista: [
     { key: '/barista',       label: 'Trang chủ', icon: <DashboardOutlined /> },

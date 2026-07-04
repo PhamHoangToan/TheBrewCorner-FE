@@ -4,7 +4,7 @@ import dayjs from 'dayjs'
 import AppLayout from '../../components/common/AppLayout'
 import PageHeader from '../../components/common/PageHeader'
 import { useAuth } from '../../hooks/useAuth'
-import { campaignService, type Campaign } from '../../services/campaign.service'
+import { campaignService, type Campaign, type CampaignStats } from '../../services/campaign.service'
 
 const SEGMENTS = [
   { value: 'ALL', label: 'Tất cả khách' },
@@ -27,6 +27,7 @@ const Campaigns: React.FC = () => {
   const [busy, setBusy] = useState(false)
   const [form, setForm] = useState({ title: '', content: '', channel: 'EMAIL', segment: 'ALL' })
   const [previewCount, setPreviewCount] = useState<number | null>(null)
+  const [statsById, setStatsById] = useState<Record<string, CampaignStats | 'loading'>>({})
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
@@ -70,6 +71,17 @@ const Campaigns: React.FC = () => {
     }
   }
 
+  const loadStats = async (id: string) => {
+    setStatsById((prev) => ({ ...prev, [id]: 'loading' }))
+    try {
+      const res = await campaignService.stats(id)
+      setStatsById((prev) => ({ ...prev, [id]: res.data }))
+    } catch {
+      setStatsById((prev) => { const next = { ...prev }; delete next[id]; return next })
+      message.error('Không tải được tỉ lệ đọc')
+    }
+  }
+
   const handleSend = (c: Campaign) => {
     Modal.confirm({
       title: `Gửi chiến dịch "${c.title}"?`,
@@ -105,6 +117,16 @@ const Campaigns: React.FC = () => {
           { title: 'Phân khúc', dataIndex: 'segment', key: 's', render: (v: string) => SEGMENTS.find((x) => x.value === v)?.label ?? v },
           { title: 'Trạng thái', dataIndex: 'status', key: 'st', render: (v: string, r: any) => v === 'SENT' ? <Tag color="green">Đã gửi ({r.sentCount})</Tag> : <Tag>Nháp</Tag> },
           { title: 'Ngày gửi', dataIndex: 'sentAt', key: 'd', render: (v: string | null) => v ? dayjs(v).format('DD/MM/YYYY HH:mm') : '—' },
+          {
+            title: 'Tỉ lệ đọc', key: 'stats', render: (_: any, r: Campaign) => {
+              if (r.status !== 'SENT') return '—'
+              const s = statsById[r.id]
+              if (!s) return <Button size="small" onClick={() => loadStats(r.id)}>Xem</Button>
+              if (s === 'loading') return '...'
+              if (!s.trackable) return <Tag>Không theo dõi được (Email)</Tag>
+              return <Tag color={s.readRate && s.readRate > 0.5 ? 'green' : 'orange'}>{s.read}/{s.sent} ({Math.round((s.readRate ?? 0) * 100)}%)</Tag>
+            },
+          },
           {
             title: '', key: 'act', render: (_: any, r: Campaign) =>
               r.status === 'DRAFT' ? <Button size="small" type="primary" onClick={() => handleSend(r)}>Gửi</Button> : null,

@@ -4,9 +4,10 @@ import { Button, message, Popconfirm, Table, Tag } from 'antd'
 import { ArrowLeftOutlined, CheckCircleOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import AppLayout from '../../../components/common/AppLayout'
 import { useAuth } from '../../../hooks/useAuth'
-import { payrollService, type PayrollDay, type PayrollDetail } from '../../../services/payroll.service'
+import { payrollService, type PayrollDay, type PayrollDetail, type PayrollHistoryItem } from '../../../services/payroll.service'
 import styles from '../payroll.module.css'
 
 const DAY_TYPE_LABEL: Record<string, string> = { WORK: 'Đi làm', PAID_LEAVE: 'Nghỉ phép', ABSENT: 'Vắng', REST: 'Nghỉ' }
@@ -28,15 +29,14 @@ const PayrollDetailPage: React.FC = () => {
     : dayjs().subtract(1, 'month')
   const [period, setPeriod] = useState(initialPeriod)
   const [detail, setDetail] = useState<PayrollDetail | null>(null)
-  const [history, setHistory] = useState<{ year: number; month: number; id: string; status: string }[]>([])
+  const [history, setHistory] = useState<PayrollHistoryItem[]>([])
   const [loading, setLoading] = useState(false)
 
   const fetchHistory = useCallback(async () => {
     if (!userId) return
     try {
       const res = await payrollService.historyByUser(userId)
-      const list = (res.data ?? []).map((p) => ({ year: p.periodYear, month: p.periodMonth, id: p.id, status: p.status }))
-      setHistory(list)
+      setHistory(res.data ?? [])
     } catch {}
   }, [userId])
 
@@ -123,15 +123,43 @@ const PayrollDetailPage: React.FC = () => {
           {history.slice(0, 6).map((h) => (
             <Tag
               key={h.id}
-              color={period.year() === h.year && period.month() + 1 === h.month ? 'volcano' : 'default'}
+              color={period.year() === h.periodYear && period.month() + 1 === h.periodMonth ? 'volcano' : 'default'}
               style={{ cursor: 'pointer' }}
-              onClick={() => setPeriod(dayjs().year(h.year).month(h.month - 1))}
+              onClick={() => setPeriod(dayjs().year(h.periodYear).month(h.periodMonth - 1))}
             >
-              {String(h.month).padStart(2, '0')}/{h.year}
+              {String(h.periodMonth).padStart(2, '0')}/{h.periodYear}
             </Tag>
           ))}
         </div>
       </div>
+
+      {history.length > 1 && (
+        <div className={styles.tableWrap} style={{ marginBottom: 16, padding: 16 }}>
+          <div style={{ fontWeight: 700, marginBottom: 8 }}>Xu hướng đi trễ / về sớm / OT theo tháng</div>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart
+              data={[...history]
+                .sort((a, b) => (a.periodYear - b.periodYear) || (a.periodMonth - b.periodMonth))
+                .slice(-6)
+                .map((h) => ({
+                  label: `${String(h.periodMonth).padStart(2, '0')}/${h.periodYear}`,
+                  'Đi trễ (phút)': h.totalLateMinutes,
+                  'Về sớm (phút)': h.totalEarlyMinutes,
+                  'OT (phút)': h.totalOtMinutes,
+                }))}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="label" fontSize={12} />
+              <YAxis fontSize={12} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="Đi trễ (phút)" fill="#d48806" />
+              <Bar dataKey="Về sớm (phút)" fill="#c41d7f" />
+              <Bar dataKey="OT (phút)" fill="#389e0d" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       {detail ? (
         <>

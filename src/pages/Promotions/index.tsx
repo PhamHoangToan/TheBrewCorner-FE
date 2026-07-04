@@ -81,6 +81,7 @@ const Promotions: React.FC = () => {
           conditionText: values.dieukien,
           minOrderAmount: values.minOrderAmount,
           discountPercent: values.giampercent,
+          imageUrl: values.imageUrl || undefined,
           startDate: values.ngaybatdau?.format('YYYY-MM-DD'),
           endDate: values.ngayketthuc?.format('YYYY-MM-DD'),
           status: 'ACTIVE',
@@ -186,6 +187,9 @@ const Promotions: React.FC = () => {
           </Form.Item>
           <Form.Item name="giampercent" label="% Giảm" rules={[{ required: true }]}>
             <InputNumber min={1} max={100} style={{ width: '100%' }} addonAfter="%" />
+          </Form.Item>
+          <Form.Item name="imageUrl" label="Ảnh banner (tùy chọn)">
+            <Input placeholder="URL ảnh hiện ở trang Ưu đãi (Customer)" />
           </Form.Item>
           <Form.Item name="ngaybatdau" label="Ngày bắt đầu" rules={[{ required: true }]}>
             <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />

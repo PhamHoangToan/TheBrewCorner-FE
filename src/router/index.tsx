@@ -43,6 +43,8 @@ const Trash = lazy(() => import('../pages/Trash'))
 const Suppliers = lazy(() => import('../pages/Suppliers'))
 const PurchaseOrders = lazy(() => import('../pages/PurchaseOrders'))
 const Campaigns = lazy(() => import('../pages/Campaigns'))
+const Reviews = lazy(() => import('../pages/Reviews'))
+const SupportChat = lazy(() => import('../pages/SupportChat'))
 
 const fallback = (
   <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80 }}>
@@ -313,6 +315,22 @@ const AppRouter: React.FC = () => (
             element={
               <RoleRoute roles={['admin']}>
                 <Campaigns />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/reviews"
+            element={
+              <RoleRoute roles={['admin']}>
+                <Reviews />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/support-chat"
+            element={
+              <RoleRoute roles={['admin', 'cashier']}>
+                <SupportChat />
               </RoleRoute>
             }
           />

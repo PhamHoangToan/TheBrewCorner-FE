@@ -12,9 +12,18 @@ export interface Campaign {
   createdAt: string
 }
 
+export interface CampaignStats {
+  channel: Campaign['channel']
+  trackable: boolean
+  sent: number
+  read: number | null
+  readRate: number | null
+}
+
 export const campaignService = {
   list: () => apiClient.get<{ items: Campaign[]; total: number }>('/campaigns'),
   previewCount: (segment: string) => apiClient.get<{ count: number }>('/campaigns/preview-count', { params: { segment } }),
   create: (data: unknown) => apiClient.post<Campaign>('/campaigns', data),
   send: (id: string) => apiClient.post<{ sent: number; total: number }>(`/campaigns/${id}/send`, {}),
+  stats: (id: string) => apiClient.get<CampaignStats>(`/campaigns/${id}/stats`),
 }
