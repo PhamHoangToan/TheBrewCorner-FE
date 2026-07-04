@@ -10,4 +10,5 @@ export const ingredientService = {
   stockExports: (params?: ListParams) => apiClient.get('/ingredients/stock-exports/list', { params }),
   createStockExport: (data: unknown) => apiClient.post('/ingredients/stock-exports', data),
   forecast: () => apiClient.get('/ingredients/forecast'),
+  expiring: (days?: number) => apiClient.get('/ingredients/expiring', { params: { days } }),
 }

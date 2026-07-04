@@ -7,6 +7,7 @@ import { useAuth } from '../../../hooks/useAuth'
 import { isSoldOut, productService } from '../../../services/product.service'
 import { tableService } from '../../../services/table.service'
 import { orderService } from '../../../services/order.service'
+import { printKitchenTicket } from '../../../utils/print'
 import styles from './orderList.module.css'
 
 type Category = string
@@ -145,15 +146,40 @@ const WaiterOrderList: React.FC = () => {
     if (!cart.length) return
     setSending(true)
     try {
-      await orderService.create({
-        tableId: selectedTable,
-        items: cart.map((c) => ({ productId: c.id, quantity: c.qty, price: c.price })),
+      const items = cart.map((c) => ({ productId: c.id, quantity: c.qty, price: c.price }))
+      // Nếu bàn đang có 1 order CHƯA thanh toán → gộp món vào đó (1 bàn = 1 bill chưa trả),
+      // tránh mỗi lần thêm lại tạo order mới làm bảng pha chế hiện trùng bàn.
+      let appendableId: string | null = null
+      try {
+        const listRes = await orderService.list({ tableId: selectedTable, limit: '100' })
+        const orders: any[] = (listRes.data as any)?.items ?? []
+        appendableId = orders.find((o) =>
+          o.status !== 'CANCELLED' && o.status !== 'PAID' && o.invoice?.status !== 'PAID',
+        )?.id ?? null
+      } catch {
+        // không tra được danh sách → cứ tạo order mới
+      }
+
+      let orderCode = ''
+      if (appendableId) {
+        const res = await orderService.addItems(appendableId, items)
+        orderCode = (res.data as any)?.code ?? ''
+        message.success('Đã thêm món vào bàn')
+      } else {
+        const res = await orderService.create({ tableId: selectedTable, items })
+        orderCode = (res.data as any)?.code ?? ''
+        message.success('Đã gửi order thành công')
+      }
+      // In phiếu bếp cho các món vừa gửi
+      printKitchenTicket({
+        code: orderCode,
+        tableName: tableOptions.find((o) => o.value === selectedTable)?.label ?? selectedTable,
+        items: cart.map((c) => ({ name: c.name, qty: c.qty })),
       })
-      message.success('Đã gửi order thành công')
       setCart([])
       navigate('/tables')
-    } catch {
-      message.error('Gửi order thất bại')
+    } catch (err: any) {
+      message.error(err?.response?.data?.message ?? 'Gửi order thất bại')
     } finally {
       setSending(false)
     }

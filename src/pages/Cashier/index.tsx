@@ -7,13 +7,14 @@ import {
   PlusOutlined,
   ReloadOutlined,
 } from '@ant-design/icons'
-import { Button, Dropdown, message } from 'antd'
+import { Button, Dropdown, InputNumber, Modal, message } from 'antd'
 import dayjs from 'dayjs'
 import AppLayout from '../../components/common/AppLayout'
 import PageHeader from '../../components/common/PageHeader'
 import { useAuth } from '../../hooks/useAuth'
 import { tableService } from '../../services/table.service'
 import { orderService } from '../../services/order.service'
+import { cashSessionService, type CashSession } from '../../services/cashSession.service'
 import { useSocketEvent } from '../../hooks/useSocket'
 import styles from './cashier.module.css'
 
@@ -127,6 +128,59 @@ const CashierHome: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  // ─── Ca quỹ tiền mặt ───
+  const [session, setSession] = useState<CashSession | null>(null)
+  const [openModalOpen, setOpenModalOpen] = useState(false)
+  const [closeModalOpen, setCloseModalOpen] = useState(false)
+  const [openingFloat, setOpeningFloat] = useState(0)
+  const [countedCash, setCountedCash] = useState(0)
+  const [sessionBusy, setSessionBusy] = useState(false)
+
+  const fetchSession = useCallback(async () => {
+    if (!user?.id) return
+    try {
+      const res = await cashSessionService.current(user.id)
+      setSession(res.data ?? null)
+    } catch {
+      setSession(null)
+    }
+  }, [user?.id])
+
+  useEffect(() => { fetchSession() }, [fetchSession])
+
+  const handleOpenSession = async () => {
+    if (!user?.id) return
+    setSessionBusy(true)
+    try {
+      await cashSessionService.open({ userId: user.id, openingFloat })
+      message.success('Đã mở ca')
+      setOpenModalOpen(false)
+      fetchSession()
+    } catch (err: any) {
+      message.error(err?.response?.data?.message ?? 'Mở ca thất bại')
+    } finally {
+      setSessionBusy(false)
+    }
+  }
+
+  const handleCloseSession = async () => {
+    if (!session) return
+    setSessionBusy(true)
+    try {
+      const res = await cashSessionService.close(session.id, { countedCash })
+      const diff = res.data?.difference ?? 0
+      message.success(
+        diff === 0 ? 'Đóng ca — khớp quỹ' : `Đóng ca — ${diff > 0 ? 'thừa' : 'thiếu'} ${Math.abs(diff).toLocaleString('vi-VN')}đ`,
+      )
+      setCloseModalOpen(false)
+      fetchSession()
+    } catch (err: any) {
+      message.error(err?.response?.data?.message ?? 'Đóng ca thất bại')
+    } finally {
+      setSessionBusy(false)
+    }
+  }
+
   const fetchOrders = useCallback(async (silent = false) => {
     if (!silent) setRefreshing(true)
     try {
@@ -195,6 +249,38 @@ const CashierHome: React.FC = () => {
   return (
     <AppLayout role={user?.role ?? 'cashier'} username={user?.name ?? ''} onLogout={handleLogout}>
       <PageHeader title="Danh sách bàn" />
+
+      <div
+        style={{
+          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+          padding: '10px 14px', marginBottom: 12, borderRadius: 10,
+          background: session ? '#f0fdf4' : '#fff7ed',
+          border: `1px solid ${session ? '#bbf7d0' : '#fed7aa'}`,
+        }}
+      >
+        {session ? (
+          <>
+            <span style={{ fontWeight: 600, color: '#166534' }}>🟢 Ca đang mở</span>
+            <span style={{ color: '#555', fontSize: 13 }}>
+              Từ {dayjs(session.openedAt).format('HH:mm DD/MM')} · Đầu ca {session.openingFloat.toLocaleString('vi-VN')}đ
+            </span>
+            <span style={{ color: '#555', fontSize: 13 }}>
+              Tiền mặt dự kiến: <b>{(session.expectedCash ?? 0).toLocaleString('vi-VN')}đ</b>
+            </span>
+            <Button danger size="small" style={{ marginLeft: 'auto' }} onClick={() => { setCountedCash(session.expectedCash ?? 0); setCloseModalOpen(true) }}>
+              Đóng ca
+            </Button>
+          </>
+        ) : (
+          <>
+            <span style={{ fontWeight: 600, color: '#9a3412' }}>🟠 Chưa mở ca quỹ</span>
+            <span style={{ color: '#7c2d12', fontSize: 13 }}>Nên mở ca trước khi thu tiền mặt để đối soát cuối ca.</span>
+            <Button type="primary" size="small" style={{ marginLeft: 'auto', background: '#662c21', borderColor: '#662c21' }} onClick={() => { setOpeningFloat(0); setOpenModalOpen(true) }}>
+              Mở ca
+            </Button>
+          </>
+        )}
+      </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
         <div className={styles.tabsRow} style={{ marginBottom: 0, flex: 1 }}>
@@ -314,6 +400,75 @@ const CashierHome: React.FC = () => {
           <PlusOutlined />
         </button>
       </div>
+
+      <Modal
+        title="Mở ca quỹ"
+        open={openModalOpen}
+        onOk={handleOpenSession}
+        onCancel={() => setOpenModalOpen(false)}
+        okText="Mở ca"
+        cancelText="Hủy"
+        confirmLoading={sessionBusy}
+      >
+        <div style={{ margin: '12px 0' }}>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Tiền mặt đầu ca (tồn quỹ)</div>
+          <InputNumber
+            style={{ width: '100%' }}
+            min={0}
+            value={openingFloat}
+            onChange={(v) => setOpeningFloat(Number(v ?? 0))}
+            formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+            parser={(v) => Number((v ?? '').replace(/,/g, ''))}
+            addonAfter="đ"
+          />
+        </div>
+      </Modal>
+
+      <Modal
+        title="Đóng ca — đối soát quỹ"
+        open={closeModalOpen}
+        onOk={handleCloseSession}
+        onCancel={() => setCloseModalOpen(false)}
+        okText="Đóng ca"
+        cancelText="Hủy"
+        okButtonProps={{ danger: true }}
+        confirmLoading={sessionBusy}
+      >
+        {session && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, margin: '12px 0' }}>
+            <div style={{ fontSize: 13, color: '#555', display: 'flex', justifyContent: 'space-between' }}>
+              <span>Tiền đầu ca</span><b>{session.openingFloat.toLocaleString('vi-VN')}đ</b>
+            </div>
+            <div style={{ fontSize: 13, color: '#555', display: 'flex', justifyContent: 'space-between' }}>
+              <span>Thu tiền mặt</span><b style={{ color: '#166534' }}>+{(session.cashPayments ?? 0).toLocaleString('vi-VN')}đ</b>
+            </div>
+            <div style={{ fontSize: 13, color: '#555', display: 'flex', justifyContent: 'space-between' }}>
+              <span>Hoàn / chi tiền mặt</span><b style={{ color: '#b91c1c' }}>−{((session.cashRefunds ?? 0) + (session.otherExpense ?? 0)).toLocaleString('vi-VN')}đ</b>
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 700, display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #eee', paddingTop: 8 }}>
+              <span>Tiền mặt dự kiến</span><span>{(session.expectedCash ?? 0).toLocaleString('vi-VN')}đ</span>
+            </div>
+            <div style={{ marginTop: 4 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Tiền mặt đếm thực tế</div>
+              <InputNumber
+                style={{ width: '100%' }}
+                min={0}
+                value={countedCash}
+                onChange={(v) => setCountedCash(Number(v ?? 0))}
+                formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                parser={(v) => Number((v ?? '').replace(/,/g, ''))}
+                addonAfter="đ"
+              />
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 700, display: 'flex', justifyContent: 'space-between' }}>
+              <span>Chênh lệch</span>
+              <span style={{ color: countedCash - (session.expectedCash ?? 0) === 0 ? '#166534' : '#b91c1c' }}>
+                {(countedCash - (session.expectedCash ?? 0)).toLocaleString('vi-VN')}đ
+              </span>
+            </div>
+          </div>
+        )}
+      </Modal>
     </AppLayout>
   )
 }

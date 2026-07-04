@@ -114,6 +114,9 @@ const Login: React.FC = () => {
               ĐĂNG NHẬP
             </Button>
           </Form.Item>
+          <div style={{ textAlign: 'center', marginTop: 12 }}>
+            <a onClick={() => navigate('/forgot-password')} style={{ color: '#662c21', cursor: 'pointer' }}>Quên mật khẩu?</a>
+          </div>
         </Form>
       </div>
     </div>

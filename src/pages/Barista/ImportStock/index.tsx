@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AutoComplete, Button, DatePicker, Form, Input, InputNumber, message, Select } from 'antd'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
+import dayjs from 'dayjs'
 import AppLayout from '../../../components/common/AppLayout'
 import { useAuth } from '../../../hooks/useAuth'
 import { ingredientService } from '../../../services/ingredient.service'
@@ -15,6 +16,7 @@ interface ItemRow {
   soluong: number | null
   donvi: string
   dongia: number | null
+  hsd: string | null
 }
 
 interface ImportForm {
@@ -31,7 +33,7 @@ const BaristaImportStock: React.FC = () => {
   const navigate = useNavigate()
   const [form] = Form.useForm<ImportForm>()
   const [items, setItems] = useState<ItemRow[]>([
-    { id: _nextId++, ingredientId: '', tennvl: '', soluong: null, donvi: '', dongia: null },
+    { id: _nextId++, ingredientId: '', tennvl: '', soluong: null, donvi: '', dongia: null, hsd: null },
   ])
   const [ingredientOptions, setIngredientOptions] = useState<{ value: string; label: string; unit: string }[]>([])
   const [submitting, setSubmitting] = useState(false)
@@ -59,7 +61,7 @@ const BaristaImportStock: React.FC = () => {
 
   useEffect(() => { fetchIngredients(); fetchSuppliers() }, [fetchIngredients, fetchSuppliers])
 
-  const addRow = () => setItems((prev) => [...prev, { id: _nextId++, ingredientId: '', tennvl: '', soluong: null, donvi: '', dongia: null }])
+  const addRow = () => setItems((prev) => [...prev, { id: _nextId++, ingredientId: '', tennvl: '', soluong: null, donvi: '', dongia: null, hsd: null }])
 
   const removeRow = (id: number) => setItems((prev) => prev.filter((r) => r.id !== id))
 
@@ -97,6 +99,7 @@ const BaristaImportStock: React.FC = () => {
             quantity: r.soluong,
             unit: r.donvi,
             unitPrice: r.dongia ?? 0,
+            expiryDate: r.hsd ?? undefined,
           })),
         })
         message.success('Lưu phiếu nhập thành công')
@@ -141,6 +144,7 @@ const BaristaImportStock: React.FC = () => {
                 <th>Số lượng</th>
                 <th>Đơn vị</th>
                 <th>Đơn giá</th>
+                <th>HSD</th>
                 <th></th>
               </tr>
             </thead>
@@ -180,6 +184,15 @@ const BaristaImportStock: React.FC = () => {
                       formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                       style={{ width: '100%' }}
                       onChange={(v) => updateRow(row.id, 'dongia', v)}
+                    />
+                  </td>
+                  <td>
+                    <DatePicker
+                      value={row.hsd ? dayjs(row.hsd) : null}
+                      format="DD/MM/YYYY"
+                      placeholder="HSD"
+                      style={{ width: '100%' }}
+                      onChange={(d) => updateRow(row.id, 'hsd', d ? d.format('YYYY-MM-DD') : null)}
                     />
                   </td>
                   <td>

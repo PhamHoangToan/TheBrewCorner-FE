@@ -8,8 +8,10 @@ import { useAuth } from '../../../hooks/useAuth'
 import { orderService } from '../../../services/order.service'
 import { invoiceService } from '../../../services/invoice.service'
 import { promotionService } from '../../../services/promotion.service'
+import { tableService } from '../../../services/table.service'
 import { userService } from '../../../services/user.service'
 import { buildVietQRUrl, VIETQR_BANK } from '../../../config/vietqr'
+import { printReceipt } from '../../../utils/print'
 import styles from './payment.module.css'
 
 interface OrderItem {
@@ -18,6 +20,27 @@ interface OrderItem {
   qty: number
   unitPrice: number
   total: number
+  status: string
+}
+
+const ITEM_STATUS_LABEL: Record<string, string> = {
+  PENDING: 'Chờ làm', PREPARING: 'Đang làm', READY: 'Xong', SERVED: 'Đã phục vụ',
+}
+const ITEM_STATUS_COLOR: Record<string, string> = {
+  PENDING: '#94a3b8', PREPARING: '#f59e0b', READY: '#10b981', SERVED: '#662c21',
+}
+
+// Tóm tắt trạng thái các món trong 1 order — dùng cho picker "Gộp bàn" để cashier biết
+// đang gộp vào order còn món nào chưa xong
+const summarizeItemStatuses = (items: any[]): string => {
+  const active = (items ?? []).filter((i: any) => !['RETURNED', 'CANCELLED'].includes(i.status))
+  if (!active.length) return 'không có món'
+  const counts = active.reduce((acc: Record<string, number>, i: any) => {
+    const key = ITEM_STATUS_LABEL[i.status] ?? i.status
+    acc[key] = (acc[key] ?? 0) + 1
+    return acc
+  }, {})
+  return Object.entries(counts).map(([label, count]) => `${count} ${label}`).join(', ')
 }
 
 interface OrderData {
@@ -32,6 +55,10 @@ interface OrderData {
   status: string
   invoicePaid: boolean
   customerId: string | null
+  invoiceId: string | null
+  invoiceStatus: string | null
+  invoiceTotal: number
+  refundedAmount: number
 }
 
 const POINT_VALUE_VND = 500 // 1 điểm = 500đ — khớp BE (loyalty.util.ts)
@@ -69,7 +96,7 @@ const mapOrder = (data: any): OrderData => {
     .map((i: any) => {
       const qty = Number(i.quantity ?? 1)
       const price = toNum(i.unitPrice ?? i.price)
-      return { id: i.id, name: i.productName ?? '', qty, unitPrice: price, total: qty * price }
+      return { id: i.id, name: i.productName ?? '', qty, unitPrice: price, total: qty * price, status: i.status ?? 'PENDING' }
     })
   const subtotal = items.reduce((s, i) => s + i.total, 0) || toNum(data.totalAmount)
   // Bàn đã có order PAID trước đó → đây là order bổ sung sau thanh toán
@@ -86,6 +113,10 @@ const mapOrder = (data: any): OrderData => {
     status: data.status ?? '',
     invoicePaid: data.invoice?.status === 'PAID',
     customerId: data.customerId ?? null,
+    invoiceId: data.invoice?.id ?? null,
+    invoiceStatus: data.invoice?.status ?? null,
+    invoiceTotal: toNum(data.invoice?.totalAmount ?? data.totalAmount),
+    refundedAmount: (data.invoice?.refunds ?? []).reduce((s: number, r: any) => s + toNum(r.amount), 0),
   }
 }
 
@@ -116,10 +147,16 @@ const CashierPayment: React.FC = () => {
   const [redeemPoints, setRedeemPoints] = useState(0)
   const [splitModalOpen, setSplitModalOpen] = useState(false)
   const [splitSelected, setSplitSelected] = useState<string[]>([])
+  const [splitTableId, setSplitTableId] = useState<string | null>(null)
+  const [availableTables, setAvailableTables] = useState<{ value: string; label: string }[]>([])
   const [mergeModalOpen, setMergeModalOpen] = useState(false)
   const [mergeSourceId, setMergeSourceId] = useState<string | null>(null)
   const [mergeOptions, setMergeOptions] = useState<{ value: string; label: string }[]>([])
   const [actionBusy, setActionBusy] = useState(false)
+  const [refundModalOpen, setRefundModalOpen] = useState(false)
+  const [refundAmount, setRefundAmount] = useState(0)
+  const [refundReason, setRefundReason] = useState('')
+  const [refundMethod, setRefundMethod] = useState('CASH')
 
   const fetchOrder = useCallback(async (id: string) => {
     setLoadingOrder(true)
@@ -231,10 +268,23 @@ const CashierPayment: React.FC = () => {
         .filter((o: any) => o.id !== order.id && o.status !== 'CANCELLED' && o.status !== 'PAID' && o.invoice?.status !== 'PAID')
         .map((o: any) => ({
           value: o.id,
-          label: `${o.table?.name ?? 'Mang về'} — ${o.code} (${toNum(o.totalAmount).toLocaleString('vi-VN')}đ)`,
+          label: `${o.table?.name ?? 'Mang về'} — ${o.code} (${toNum(o.totalAmount).toLocaleString('vi-VN')}đ) — ${summarizeItemStatuses(o.items)}`,
         })))
     } catch {
       setMergeOptions([])
+    }
+  }
+
+  const openSplitModal = async () => {
+    setSplitSelected([])
+    setSplitTableId(null)
+    setSplitModalOpen(true)
+    try {
+      const res = await tableService.list({ status: 'AVAILABLE', limit: '100' })
+      const items: any[] = res.data?.items ?? []
+      setAvailableTables(items.map((t: any) => ({ value: t.id, label: `${t.area?.name ? t.area.name + ' / ' : ''}${t.name ?? t.code}` })))
+    } catch {
+      setAvailableTables([])
     }
   }
 
@@ -249,11 +299,14 @@ const CashierPayment: React.FC = () => {
     }
     setActionBusy(true)
     try {
-      await orderService.split(order.id, splitSelected)
-      message.success('Đã tách bill — order mới xuất hiện trong danh sách thanh toán')
+      const res = await orderService.split(order.id, splitSelected, splitTableId ?? undefined)
+      const newCode = (res.data as { splitOrder?: { code?: string } } | undefined)?.splitOrder?.code
+      message.success(newCode ? `Đã tách bill — order mới ${newCode} đã có trong danh sách bàn` : 'Đã tách bill')
       setSplitModalOpen(false)
       setSplitSelected([])
+      setSplitTableId(null)
       fetchOrder(order.id)
+      fetchServedOrders()
     } catch (err: any) {
       message.error(err?.response?.data?.message ?? 'Tách bill thất bại')
     } finally {
@@ -272,8 +325,41 @@ const CashierPayment: React.FC = () => {
       message.success('Đã gộp order')
       setMergeModalOpen(false)
       fetchOrder(order.id)
+      fetchServedOrders()
     } catch (err: any) {
       message.error(err?.response?.data?.message ?? 'Gộp order thất bại')
+    } finally {
+      setActionBusy(false)
+    }
+  }
+
+  const openRefundModal = () => {
+    if (!order) return
+    const remaining = Math.max(0, order.invoiceTotal - order.refundedAmount)
+    setRefundAmount(remaining)
+    setRefundReason('')
+    setRefundMethod('CASH')
+    setRefundModalOpen(true)
+  }
+
+  const handleRefund = async () => {
+    if (!order?.invoiceId) return
+    if (refundAmount <= 0) { message.warning('Số tiền hoàn phải lớn hơn 0'); return }
+    if (!refundReason.trim()) { message.warning('Nhập lý do hoàn tiền'); return }
+    setActionBusy(true)
+    try {
+      await invoiceService.refund(order.invoiceId, {
+        amount: refundAmount,
+        reason: refundReason.trim(),
+        method: refundMethod,
+        refundedById: user?.id,
+      })
+      message.success('Đã hoàn tiền')
+      setRefundModalOpen(false)
+      fetchOrder(order.id)
+      fetchServedOrders()
+    } catch (err: any) {
+      message.error(err?.response?.data?.message ?? 'Hoàn tiền thất bại')
     } finally {
       setActionBusy(false)
     }
@@ -307,6 +393,21 @@ const CashierPayment: React.FC = () => {
     } finally {
       setPaying(false)
     }
+  }
+
+  const handlePrintReceipt = () => {
+    if (!order) return
+    printReceipt({
+      code: order.code,
+      tableName: order.tableName,
+      createdAt: order.createdAt,
+      items: order.items.map((i) => ({ name: i.name, qty: i.qty, total: i.total })),
+      subtotal: order.subtotal,
+      discount: discount + tierDiscount + redeemValue,
+      total: grandTotal,
+      paymentMethod,
+      cashier: user?.name,
+    })
   }
 
   return (
@@ -412,7 +513,7 @@ const CashierPayment: React.FC = () => {
               <div className={styles.successTitle}>Thanh toán thành công!</div>
               <div className={styles.successSub}>Order {paidRef?.code} — {paidRef?.table}</div>
               <div className={styles.successActions}>
-                <Button icon={<PrinterOutlined />} size="large" onClick={() => window.print()}>
+                <Button icon={<PrinterOutlined />} size="large" onClick={handlePrintReceipt}>
                   In hóa đơn
                 </Button>
                 <Button
@@ -435,10 +536,30 @@ const CashierPayment: React.FC = () => {
             </div>
           ) : (order.status === 'PAID' || order.invoicePaid) ? (
             <div className={styles.successScreen}>
-              <div className={styles.successIcon}>✓</div>
-              <div className={styles.successTitle}>Order này đã thanh toán rồi!</div>
+              <div className={styles.successIcon}>{order.refundedAmount > 0 ? '↩' : '✓'}</div>
+              <div className={styles.successTitle}>
+                {order.invoiceStatus === 'REFUNDED'
+                  ? 'Đã hoàn tiền toàn bộ'
+                  : order.refundedAmount > 0
+                    ? 'Đã hoàn tiền một phần'
+                    : 'Order này đã thanh toán rồi!'}
+              </div>
               <div className={styles.successSub}>Order {order.code} — {order.tableName}</div>
+              {order.refundedAmount > 0 && (
+                <div className={styles.successSub}>
+                  Đã hoàn: {order.refundedAmount.toLocaleString('vi-VN')}đ / {order.invoiceTotal.toLocaleString('vi-VN')}đ
+                </div>
+              )}
               <div className={styles.successActions}>
+                {order.invoiceId && order.invoiceStatus !== 'REFUNDED' && order.refundedAmount < order.invoiceTotal && (
+                  <Button
+                    danger
+                    size="large"
+                    onClick={openRefundModal}
+                  >
+                    Hoàn tiền
+                  </Button>
+                )}
                 <Button
                   type="primary"
                   size="large"
@@ -478,7 +599,17 @@ const CashierPayment: React.FC = () => {
                     key={item.id}
                     className={`${styles.orderRow} ${idx % 2 === 1 ? styles.orderRowAlt : ''} ${order.isAdditional ? styles.orderRowAdditional : ''}`}
                   >
-                    <span>{item.name}</span>
+                    <span>
+                      {item.name}
+                      <span
+                        style={{
+                          marginLeft: 8, fontSize: 11, padding: '1px 6px', borderRadius: 4,
+                          color: '#fff', background: ITEM_STATUS_COLOR[item.status] ?? '#94a3b8',
+                        }}
+                      >
+                        {ITEM_STATUS_LABEL[item.status] ?? item.status}
+                      </span>
+                    </span>
                     <span><div className={styles.qtyBox}>{item.qty}</div></span>
                     <span style={{ textAlign: 'right' }}>{item.total.toLocaleString('vi-VN')} VND</span>
                   </div>
@@ -581,7 +712,7 @@ const CashierPayment: React.FC = () => {
                 <Button
                   icon={<SplitCellsOutlined />}
                   disabled={order.items.length < 2}
-                  onClick={() => { setSplitSelected([]); setSplitModalOpen(true) }}
+                  onClick={openSplitModal}
                 >
                   Tách bill
                 </Button>
@@ -620,8 +751,20 @@ const CashierPayment: React.FC = () => {
             </Checkbox>
           ))}
         </div>
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Bàn cho order mới</div>
+          <Select
+            style={{ width: '100%' }}
+            placeholder="Giữ nguyên bàn hiện tại"
+            allowClear
+            value={splitTableId}
+            onChange={setSplitTableId}
+            options={availableTables}
+            notFoundContent="Không có bàn nào đang trống"
+          />
+        </div>
         <div style={{ fontSize: 12, color: '#888' }}>
-          Món được chọn sẽ chuyển sang một order mới cùng bàn để thanh toán riêng. Phải để lại ít nhất 1 món.
+          Món được chọn sẽ chuyển sang một order mới để thanh toán riêng — mặc định cùng bàn, hoặc chọn bàn trống khác nếu nhóm khách tách sang bàn riêng. Phải để lại ít nhất 1 món.
         </div>
       </Modal>
 
@@ -647,6 +790,64 @@ const CashierPayment: React.FC = () => {
         <div style={{ fontSize: 12, color: '#888' }}>
           Toàn bộ món của order được chọn sẽ chuyển vào order hiện tại; order kia bị hủy và bàn của nó (nếu trống) sẽ trở về trạng thái trống.
         </div>
+      </Modal>
+
+      <Modal
+        title="Hoàn tiền hóa đơn"
+        open={refundModalOpen}
+        onOk={handleRefund}
+        onCancel={() => setRefundModalOpen(false)}
+        okText="Xác nhận hoàn"
+        cancelText="Hủy"
+        okButtonProps={{ danger: true }}
+        confirmLoading={actionBusy}
+      >
+        {order && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, margin: '12px 0' }}>
+            <div style={{ fontSize: 13, color: '#555' }}>
+              HĐ {order.code} — Tổng: <b>{order.invoiceTotal.toLocaleString('vi-VN')}đ</b>
+              {order.refundedAmount > 0 && ` — Đã hoàn: ${order.refundedAmount.toLocaleString('vi-VN')}đ`}
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Số tiền hoàn</div>
+              <InputNumber
+                style={{ width: '100%' }}
+                min={0}
+                max={Math.max(0, order.invoiceTotal - order.refundedAmount)}
+                value={refundAmount}
+                onChange={(v) => setRefundAmount(Number(v ?? 0))}
+                formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                parser={(v) => Number((v ?? '').replace(/,/g, ''))}
+                addonAfter="đ"
+              />
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Phương thức hoàn</div>
+              <Radio.Group value={refundMethod} onChange={(e) => setRefundMethod(e.target.value)}>
+                <Radio value="CASH">Tiền mặt</Radio>
+                <Radio value="BANK_TRANSFER">Chuyển khoản</Radio>
+              </Radio.Group>
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Lý do</div>
+              <Select
+                style={{ width: '100%' }}
+                placeholder="Chọn hoặc nhập lý do"
+                value={refundReason || undefined}
+                onChange={setRefundReason}
+                options={[
+                  { value: 'Khách đổi ý', label: 'Khách đổi ý' },
+                  { value: 'Món lỗi / pha sai', label: 'Món lỗi / pha sai' },
+                  { value: 'Tính nhầm tiền', label: 'Tính nhầm tiền' },
+                  { value: 'Hủy đơn', label: 'Hủy đơn' },
+                ]}
+              />
+            </div>
+            <div style={{ fontSize: 12, color: '#888' }}>
+              Hoàn toàn bộ sẽ thu hồi điểm tích lũy đã cộng cho khách. Giao dịch được ghi vào phiếu chi.
+            </div>
+          </div>
+        )}
       </Modal>
     </AppLayout>
   )

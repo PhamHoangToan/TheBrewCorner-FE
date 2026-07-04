@@ -36,6 +36,13 @@ const STATUS_OPTIONS = [
 
 const ACTIVE_ORDER_STATUSES = new Set(['SENT', 'PREPARING', 'READY'])
 
+const ITEM_STATUS_LABEL: Record<string, string> = {
+  PENDING: 'Chờ', PREPARING: 'Đang làm', READY: 'Xong', SERVED: 'Đã phục vụ',
+}
+const ITEM_STATUS_COLOR: Record<string, string> = {
+  PENDING: '#94a3b8', PREPARING: '#f59e0b', READY: '#10b981', SERVED: '#662c21',
+}
+
 const mapOrder = (item: any, idx: number): OrderCard => {
   const elapsedMin = item.createdAt ? dayjs().diff(dayjs(item.createdAt), 'minute') : 0
   const area = item.table?.area?.name ?? ''
@@ -195,6 +202,12 @@ const BaristaHome: React.FC = () => {
               {order.items.map((item) => (
                 <div key={item.id} className={styles.itemRow}>
                   <span>{item.name} ({item.qty})</span>
+                  <span style={{
+                    fontSize: 11, padding: '1px 8px', borderRadius: 10, color: '#fff',
+                    background: ITEM_STATUS_COLOR[item.status] ?? '#94a3b8',
+                  }}>
+                    {ITEM_STATUS_LABEL[item.status] ?? item.status}
+                  </span>
                 </div>
               ))}
               <div style={{ marginTop: 10, display: 'flex', gap: 8, alignItems: 'center' }}>

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { DatePicker, Table, Tabs } from 'antd'
+import { Button, DatePicker, Table, Tabs } from 'antd'
+import { DownloadOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs, { type Dayjs } from 'dayjs'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
@@ -7,6 +8,7 @@ import AppLayout from '../../components/common/AppLayout'
 import PageHeader from '../../components/common/PageHeader'
 import { useAuth } from '../../hooks/useAuth'
 import { reportService } from '../../services/report.service'
+import { exportCsv } from '../../utils/exportCsv'
 import styles from './reports.module.css'
 
 const { RangePicker } = DatePicker
@@ -50,6 +52,13 @@ interface ProfitSummary {
 }
 
 const fmtVnd = (v: number) => v.toLocaleString('vi-VN')
+
+const PAYMENT_LABEL: Record<string, string> = {
+  CASH: 'Tiền mặt', BANK_TRANSFER: 'Chuyển khoản', CARD: 'Thẻ', E_WALLET: 'Ví điện tử',
+}
+const kpiBox: React.CSSProperties = { flex: 1, minWidth: 160, padding: 16, borderRadius: 10, background: '#faf7f5', border: '1px solid #eee' }
+const kpiLabel: React.CSSProperties = { fontSize: 13, color: '#888', marginBottom: 6 }
+const kpiValue: React.CSSProperties = { fontSize: 22, fontWeight: 700, color: '#662c21' }
 
 const revenueColumns: ColumnsType<RevenueRow> = [
   { title: 'Ngày', dataIndex: 'ngay', key: 'ngay' },
@@ -104,18 +113,27 @@ const Reports: React.FC = () => {
   const [hourRows, setHourRows] = useState<HourRow[]>([])
   const [profitRows, setProfitRows] = useState<ProfitRow[]>([])
   const [profitSummary, setProfitSummary] = useState<ProfitSummary | null>(null)
+  const [zReport, setZReport] = useState<any | null>(null)
+  const [waste, setWaste] = useState<any | null>(null)
+  const [staffRows, setStaffRows] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
     const params = { startDate: range[0].format('YYYY-MM-DD'), endDate: range[1].format('YYYY-MM-DD') }
     try {
-      const [revenueRes, salesRes, hourRes, profitRes] = await Promise.all([
+      const [revenueRes, salesRes, hourRes, profitRes, zRes, wasteRes, staffRes] = await Promise.all([
         reportService.revenue(params),
         reportService.sales(params),
         reportService.revenueByHour(params),
         reportService.profit(params),
-      ])
+        reportService.zReport({ date: range[1].format('YYYY-MM-DD') }),
+        reportService.waste(params),
+        reportService.staffPerformance(params),
+      ]) as any
+      setZReport(zRes.data ?? null)
+      setWaste(wasteRes.data ?? null)
+      setStaffRows((staffRes?.data as any) ?? [])
       const revenueItems: any[] = (revenueRes.data as any) ?? []
       setRevenueRows(revenueItems.map((r, idx) => ({
         key: r.code ?? String(idx),
@@ -154,6 +172,9 @@ const Reports: React.FC = () => {
       setHourRows([])
       setProfitRows([])
       setProfitSummary(null)
+      setZReport(null)
+      setWaste(null)
+      setStaffRows([])
     } finally {
       setLoading(false)
     }
@@ -177,8 +198,11 @@ const Reports: React.FC = () => {
             label: 'Báo cáo doanh thu',
             children: (
               <>
-                <div className={styles.filterRow}>
+                <div className={styles.filterRow} style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <RangePicker format="DD/MM/YYYY" value={range} onChange={handleRangeChange} />
+                  <Button icon={<DownloadOutlined />} onClick={() => exportCsv('doanh-thu', [{ key: 'ngay', label: 'Ngày' }, { key: 'doanhthu', label: 'Doanh thu' }], revenueRows)}>
+                    Xuất CSV
+                  </Button>
                 </div>
                 <div className={styles.tableWrap}>
                   <Table columns={revenueColumns} dataSource={revenueRows} loading={loading} pagination={{ pageSize: 10 }} />
@@ -254,6 +278,121 @@ const Reports: React.FC = () => {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
+              </>
+            ),
+          },
+          {
+            key: 'chotca',
+            label: 'Chốt ca / Z-report',
+            children: (
+              <>
+                <div className={styles.filterRow}>
+                  <DatePicker
+                    format="DD/MM/YYYY"
+                    value={range[1]}
+                    onChange={(d) => d && setRange([d.startOf('day'), d.endOf('day')])}
+                  />
+                </div>
+                {zReport ? (
+                  <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                    <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                      <div style={kpiBox}>
+                        <div style={kpiLabel}>Doanh thu (gross)</div>
+                        <div style={kpiValue}>{fmtVnd(zReport.grossRevenue ?? 0)}</div>
+                      </div>
+                      <div style={kpiBox}>
+                        <div style={kpiLabel}>Hoàn tiền ({zReport.refundCount ?? 0})</div>
+                        <div style={{ ...kpiValue, color: '#b91c1c' }}>−{fmtVnd(zReport.totalRefund ?? 0)}</div>
+                      </div>
+                      <div style={kpiBox}>
+                        <div style={kpiLabel}>Doanh thu thực (net)</div>
+                        <div style={{ ...kpiValue, color: '#166534' }}>{fmtVnd(zReport.netRevenue ?? 0)}</div>
+                      </div>
+                    </div>
+
+                    <Table
+                      title={() => 'Theo phương thức thanh toán'}
+                      pagination={false}
+                      dataSource={(zReport.byMethod ?? []).map((m: any, i: number) => ({ key: i, ...m }))}
+                      columns={[
+                        { title: 'Phương thức', dataIndex: 'method', key: 'method', render: (m: string) => PAYMENT_LABEL[m] ?? m },
+                        { title: 'Số giao dịch', dataIndex: 'count', key: 'count', align: 'center' as const },
+                        { title: 'Số tiền', dataIndex: 'amount', key: 'amount', align: 'right' as const, render: fmtVnd },
+                      ]}
+                    />
+
+                    <Table
+                      title={() => 'Ca quỹ trong ngày'}
+                      pagination={false}
+                      locale={{ emptyText: 'Không có ca quỹ' }}
+                      dataSource={(zReport.cashSessions ?? []).map((s: any) => ({ key: s.id, ...s }))}
+                      columns={[
+                        { title: 'Thu ngân', dataIndex: 'cashier', key: 'cashier' },
+                        { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (s: string) => (s === 'OPEN' ? 'Đang mở' : 'Đã đóng') },
+                        { title: 'Đầu ca', dataIndex: 'openingFloat', key: 'openingFloat', align: 'right' as const, render: fmtVnd },
+                        { title: 'Dự kiến', dataIndex: 'expectedCash', key: 'expectedCash', align: 'right' as const, render: (v: number | null) => (v == null ? '—' : fmtVnd(v)) },
+                        { title: 'Thực đếm', dataIndex: 'countedCash', key: 'countedCash', align: 'right' as const, render: (v: number | null) => (v == null ? '—' : fmtVnd(v)) },
+                        {
+                          title: 'Chênh lệch', dataIndex: 'difference', key: 'difference', align: 'right' as const,
+                          render: (v: number | null) => (v == null ? '—' : <span style={{ color: v === 0 ? '#166534' : '#b91c1c' }}>{fmtVnd(v)}</span>),
+                        },
+                      ]}
+                    />
+                  </div>
+                ) : (
+                  <div style={{ marginTop: 24, color: '#999' }}>Không có dữ liệu</div>
+                )}
+              </>
+            ),
+          },
+          {
+            key: 'haohut',
+            label: 'Hao hụt',
+            children: (
+              <>
+                <div className={styles.filterRow}>
+                  <RangePicker format="DD/MM/YYYY" value={range} onChange={handleRangeChange} />
+                </div>
+                <div style={{ marginTop: 12, marginBottom: 12, fontSize: 15 }}>
+                  Tổng giá trị hao hụt (đổ bỏ / hết hạn):{' '}
+                  <b style={{ color: '#b91c1c' }}>{fmtVnd(waste?.totalCost ?? 0)}đ</b>
+                </div>
+                <Table
+                  pagination={false}
+                  locale={{ emptyText: 'Không có hao hụt trong kỳ' }}
+                  dataSource={(waste?.items ?? []).map((w: any) => ({ key: w.ingredientId, ...w }))}
+                  columns={[
+                    { title: 'Nguyên liệu', dataIndex: 'ingredientName', key: 'ingredientName' },
+                    { title: 'Số lượng', dataIndex: 'quantity', key: 'quantity', align: 'right' as const },
+                    { title: 'Giá nhập', dataIndex: 'unitPrice', key: 'unitPrice', align: 'right' as const, render: fmtVnd },
+                    { title: 'Giá trị hao hụt', dataIndex: 'cost', key: 'cost', align: 'right' as const, render: (v: number) => <span style={{ color: '#b91c1c' }}>{fmtVnd(v)}</span> },
+                  ]}
+                />
+              </>
+            ),
+          },
+          {
+            key: 'hieusuat',
+            label: 'Hiệu suất nhân viên',
+            children: (
+              <>
+                <div className={styles.filterRow} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <RangePicker format="DD/MM/YYYY" value={range} onChange={handleRangeChange} />
+                  <Button icon={<DownloadOutlined />} onClick={() => exportCsv('hieu-suat-nhan-vien', [{ key: 'name', label: 'Nhân viên' }, { key: 'code', label: 'Mã' }, { key: 'invoiceCount', label: 'Số hóa đơn' }, { key: 'revenue', label: 'Doanh thu' }], staffRows)}>
+                    Xuất CSV
+                  </Button>
+                </div>
+                <Table
+                  pagination={false}
+                  locale={{ emptyText: 'Không có dữ liệu' }}
+                  dataSource={staffRows.map((s: any) => ({ key: s.userId, ...s }))}
+                  columns={[
+                    { title: 'Nhân viên', dataIndex: 'name', key: 'name' },
+                    { title: 'Mã', dataIndex: 'code', key: 'code' },
+                    { title: 'Số hóa đơn', dataIndex: 'invoiceCount', key: 'invoiceCount', align: 'center' as const },
+                    { title: 'Doanh thu', dataIndex: 'revenue', key: 'revenue', align: 'right' as const, render: fmtVnd },
+                  ]}
+                />
               </>
             ),
           },

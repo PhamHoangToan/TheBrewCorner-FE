@@ -1,11 +1,18 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { TeamOutlined } from '@ant-design/icons'
+import { QrcodeOutlined, TeamOutlined } from '@ant-design/icons'
+import { Button, Modal } from 'antd'
 import AppLayout from '../../components/common/AppLayout'
 import { useAuth } from '../../hooks/useAuth'
 import { tableService } from '../../services/table.service'
 import { useSocketEvent } from '../../hooks/useSocket'
+import { printHtml } from '../../utils/print'
 import styles from './tableMap.module.css'
+
+// URL app khách hàng để dựng link QR gọi món tại bàn (set VITE_CUSTOMER_URL trên môi trường thật)
+const CUSTOMER_APP_URL = (import.meta.env.VITE_CUSTOMER_URL as string | undefined) ?? window.location.origin
+const tableQrUrl = (tableId: string) => `${CUSTOMER_APP_URL.replace(/\/$/, '')}/table/${tableId}`
+const qrImageUrl = (data: string) => `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(data)}`
 
 interface TableCard {
   id: string
@@ -69,35 +76,44 @@ const LEGEND = [
 ]
 
 const DONE_ITEM_STATUSES = new Set(['SERVED', 'RETURNED', 'CANCELLED'])
+const isOrderPaid = (o: any) => o.status === 'PAID' || o.invoice?.status === 'PAID'
 
 const mapTable = (item: any, idx: number): TableCard => {
-  // Bàn AVAILABLE: bỏ qua mọi order cũ, hiển thị như bàn trống
-  const activeOrder = item.status === 'AVAILABLE' ? undefined : (item.orders ?? []).find((o: any) => {
-    if (o.status === 'CANCELLED') return false
-    if (o.status !== 'PAID') return true
-    return (o.items ?? []).some((i: any) => !DONE_ITEM_STATUSES.has(i.status))
-  })
+  // Bàn AVAILABLE: bỏ qua order cũ, coi như bàn trống. Ngược lại gộp TẤT CẢ order còn
+  // gắn bàn (trừ đã hủy) — order phiên trước đã được gỡ tableId khi đặt bàn về trống.
+  const orders: any[] = item.status === 'AVAILABLE'
+    ? []
+    : (item.orders ?? []).filter((o: any) => o.status !== 'CANCELLED')
 
-  const orderItems = activeOrder?.items ?? []
-  const activeItems = orderItems.filter((i: any) => !DONE_ITEM_STATUSES.has(i.status))
-  const itemCount = orderItems
-    .filter((i: any) => !['RETURNED', 'CANCELLED'].includes(i.status))
-    .reduce((s: number, i: any) => s + Number(i.quantity ?? 1), 0)
-  const elapsedMin = activeOrder?.createdAt
-    ? Math.max(0, Math.floor((Date.now() - new Date(activeOrder.createdAt).getTime()) / 60000))
-    : 0
+  const allItems = orders.flatMap((o: any) => (o.items ?? []).map((i: any) => ({ ...i, paid: isOrderPaid(o) })))
+  const billableItems = allItems.filter((i: any) => !['RETURNED', 'CANCELLED'].includes(i.status))
+  // Món chưa phục vụ xong (barista còn việc), bất kể đã trả tiền hay chưa
+  const activeItems = allItems.filter((i: any) => !DONE_ITEM_STATUSES.has(i.status))
+  const itemCount = billableItems.reduce((s: number, i: any) => s + Number(i.quantity ?? 1), 0)
+
+  // Order chưa thanh toán còn món billable → bàn còn nợ tiền
+  const unpaidOrder = orders.find((o: any) => !isOrderPaid(o) && (o.items ?? []).some((i: any) => !['RETURNED', 'CANCELLED'].includes(i.status)))
+  const allPaid = billableItems.length > 0 && !unpaidOrder
+  // Ưu tiên điều hướng: order chưa trả tiền (để thanh toán) > order bất kỳ còn hoạt động
+  const navOrder = unpaidOrder ?? orders[0]
+
+  const earliest = orders.reduce((min: number, o: any) => {
+    const t = o.createdAt ? new Date(o.createdAt).getTime() : Date.now()
+    return Math.min(min, t)
+  }, Date.now())
+  const elapsedMin = orders.length ? Math.max(0, Math.floor((Date.now() - earliest) / 60000)) : 0
 
   return {
     id: item.id ?? String(idx),
     name: item.name ?? item.code ?? `Bàn ${String(idx + 1).padStart(2, '0')}`,
     area: item.area?.name ?? '',
     tableStatus: item.status ?? '',
-    orderId: activeOrder?.id ?? '',
-    orderStatus: activeOrder?.status ?? '',
-    orderPaid: activeOrder?.status === 'PAID',
+    orderId: navOrder?.id ?? '',
+    orderStatus: unpaidOrder?.status ?? (orders.length ? 'PAID' : ''),
+    orderPaid: allPaid,
     activeItemStatuses: activeItems.map((i: any) => i.status as string),
     itemCount,
-    totalVnd: Number(activeOrder?.totalAmount ?? 0),
+    totalVnd: billableItems.reduce((s: number, i: any) => s + Number(i.totalPrice ?? 0), 0),
     elapsedMin,
   }
 }
@@ -107,6 +123,7 @@ const TableMap: React.FC = () => {
   const navigate = useNavigate()
   const [tables, setTables] = useState<TableCard[]>([])
   const [loading, setLoading] = useState(true)
+  const [qrTable, setQrTable] = useState<{ id: string; name: string } | null>(null)
 
   const fetchData = useCallback(async () => {
     try {
@@ -136,8 +153,9 @@ const TableMap: React.FC = () => {
     try {
       await tableService.update(tableId, { status: 'AVAILABLE' })
       fetchData()
-    } catch {
-      // silent — table may already be available
+    } catch (err: any) {
+      const msg = err?.response?.data?.message
+      if (msg) window.alert(msg)
     }
   }
 
@@ -147,6 +165,24 @@ const TableMap: React.FC = () => {
     } else {
       navigate(`/order?tableId=${table.id}`)
     }
+  }
+
+  const handleShowQr = (e: React.MouseEvent, table: TableCard) => {
+    e.stopPropagation()
+    setQrTable({ id: table.id, name: table.name })
+  }
+
+  const handlePrintQr = () => {
+    if (!qrTable) return
+    printHtml(`
+      <div class="center">
+        <div class="shop">The Brew Corner</div>
+        <div class="big">${qrTable.name}</div>
+        <div class="sub">Quét mã để gọi món tại bàn</div>
+        <img src="${qrImageUrl(tableQrUrl(qrTable.id))}" style="width:48mm;height:48mm;margin:4mm auto;display:block" />
+        <div class="foot">Sau khi gọi món, thanh toán tại quầy</div>
+      </div>
+    `)
   }
 
   const summaryByColor: Record<TableColor, number> = {
@@ -219,7 +255,7 @@ const TableMap: React.FC = () => {
                   </div>
                 )}
 
-                {table.orderPaid && (
+                {table.orderPaid && table.activeItemStatuses.length === 0 && (
                   <button
                     type="button"
                     className={styles.resetBtn}
@@ -228,11 +264,50 @@ const TableMap: React.FC = () => {
                     Đặt trống
                   </button>
                 )}
+
+                <span
+                  role="button"
+                  title="Mã QR gọi món tại bàn"
+                  className={styles.qrBtn}
+                  onClick={(e) => handleShowQr(e, table)}
+                  style={{ position: 'absolute', top: 6, right: 6, cursor: 'pointer', opacity: 0.7, fontSize: 16 }}
+                >
+                  <QrcodeOutlined />
+                </span>
               </button>
             )
           })}
         </div>
       )}
+
+      <Modal
+        title={qrTable ? `Mã QR — ${qrTable.name}` : 'Mã QR'}
+        open={!!qrTable}
+        onCancel={() => setQrTable(null)}
+        footer={[
+          <Button key="print" type="primary" onClick={handlePrintQr} style={{ background: '#662c21', borderColor: '#662c21' }}>
+            In mã QR
+          </Button>,
+          <Button key="close" onClick={() => setQrTable(null)}>Đóng</Button>,
+        ]}
+      >
+        {qrTable && (
+          <div style={{ textAlign: 'center' }}>
+            <img
+              src={qrImageUrl(tableQrUrl(qrTable.id))}
+              alt="QR"
+              style={{ width: 240, height: 240 }}
+              referrerPolicy="no-referrer"
+            />
+            <div style={{ fontSize: 12, color: '#888', wordBreak: 'break-all', marginTop: 8 }}>
+              {tableQrUrl(qrTable.id)}
+            </div>
+            <div style={{ fontSize: 13, color: '#555', marginTop: 8 }}>
+              Khách quét mã này để tự gọi món tại bàn. Dán lên bàn hoặc in ra.
+            </div>
+          </div>
+        )}
+      </Modal>
     </AppLayout>
   )
 }

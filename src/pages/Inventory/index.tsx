@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { Button, Form, Input, InputNumber, message, Modal, Select, Table, Tag, Tooltip } from 'antd'
+import { Alert, Button, Form, Input, InputNumber, message, Modal, Select, Table, Tag, Tooltip } from 'antd'
 import { DeleteOutlined, EditOutlined, PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import AppLayout from '../../components/common/AppLayout'
@@ -65,6 +65,7 @@ const Inventory: React.FC = () => {
   const [editing, setEditing] = useState<Ingredient | null>(null)
   const [form] = Form.useForm()
   const [forecastMap, setForecastMap] = useState<Record<string, Forecast>>({})
+  const [expiring, setExpiring] = useState<any[]>([])
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -97,7 +98,16 @@ const Inventory: React.FC = () => {
     }
   }, [])
 
-  useEffect(() => { fetchData(); fetchForecast() }, [fetchData, fetchForecast])
+  const fetchExpiring = useCallback(async () => {
+    try {
+      const res = await ingredientService.expiring(7)
+      setExpiring((res.data as any) ?? [])
+    } catch {
+      setExpiring([])
+    }
+  }, [])
+
+  useEffect(() => { fetchData(); fetchForecast(); fetchExpiring() }, [fetchData, fetchForecast, fetchExpiring])
 
   const openAdd = () => { setEditing(null); form.resetFields(); setModalOpen(true) }
   const openEdit = (record: Ingredient) => {
@@ -172,6 +182,23 @@ const Inventory: React.FC = () => {
       <div className={styles.toolbar}>
         <Button type="primary" icon={<PlusOutlined />} className={styles.addBtn} onClick={openAdd}>Thêm nguyên vật liệu</Button>
       </div>
+      {expiring.length > 0 && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message={`${expiring.length} lô nguyên liệu sắp/đã hết hạn`}
+          description={
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+              {expiring.slice(0, 12).map((b: any) => (
+                <Tag key={b.id} color={b.expired ? 'red' : 'orange'}>
+                  {b.ingredientName}: {b.quantity} {b.unit} — {b.expired ? `hết hạn ${-b.daysLeft} ngày` : `còn ${b.daysLeft} ngày`}
+                </Tag>
+              ))}
+            </div>
+          }
+        />
+      )}
       <Table columns={columns} dataSource={data} loading={loading} pagination={{ pageSize: 10 }} className={styles.table} />
       <Modal title={editing ? 'Sửa nguyên vật liệu' : 'Thêm nguyên vật liệu'} open={modalOpen} onOk={handleOk} onCancel={() => setModalOpen(false)} okText="Lưu" cancelText="Hủy">
         <Form form={form} layout="vertical">

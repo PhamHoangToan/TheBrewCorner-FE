@@ -36,9 +36,13 @@ const TableMap = lazy(() => import('../pages/TableMap'))
 const Reservations = lazy(() => import('../pages/Reservations'))
 const StaffRequests = lazy(() => import('../pages/StaffRequests'))
 const ChangePassword = lazy(() => import('../pages/ChangePassword'))
+const ForgotPassword = lazy(() => import('../pages/ForgotPassword'))
+const ResetPassword = lazy(() => import('../pages/ResetPassword'))
 const ActivityLog = lazy(() => import('../pages/ActivityLog'))
 const Trash = lazy(() => import('../pages/Trash'))
 const Suppliers = lazy(() => import('../pages/Suppliers'))
+const PurchaseOrders = lazy(() => import('../pages/PurchaseOrders'))
+const Campaigns = lazy(() => import('../pages/Campaigns'))
 
 const fallback = (
   <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80 }}>
@@ -51,6 +55,8 @@ const AppRouter: React.FC = () => (
     <Suspense fallback={fallback}>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route element={<PrivateRoute />}>
           <Route path="/change-password" element={<ChangePassword />} />
@@ -291,6 +297,22 @@ const AppRouter: React.FC = () => (
             element={
               <RoleRoute roles={['admin']}>
                 <Suppliers />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/purchase-orders"
+            element={
+              <RoleRoute roles={['admin']}>
+                <PurchaseOrders />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/campaigns"
+            element={
+              <RoleRoute roles={['admin']}>
+                <Campaigns />
               </RoleRoute>
             }
           />
