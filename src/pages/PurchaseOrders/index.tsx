@@ -6,8 +6,6 @@ import { useAuth } from '../../hooks/useAuth'
 import { purchaseOrderService, type PurchaseSuggestion, type PurchaseOrder } from '../../services/purchaseOrder.service'
 import { supplierService, type Supplier } from '../../services/supplier.service'
 
-const fmtVnd = (v: number) => (Number(v) || 0).toLocaleString('vi-VN')
-
 const STATUS_TAG: Record<string, { color: string; label: string }> = {
   DRAFT: { color: 'default', label: 'Nháp' },
   SENT: { color: 'blue', label: 'Đã gửi NCC' },

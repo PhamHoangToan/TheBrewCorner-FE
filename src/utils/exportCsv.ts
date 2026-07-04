@@ -1,9 +1,9 @@
 // Xuất mảng dữ liệu ra file CSV (Excel mở được) — không cần thư viện.
 // columns: [{ key, label }]. Thêm BOM UTF-8 để Excel hiển thị tiếng Việt đúng.
-export const exportCsv = (
+export const exportCsv = <T extends object>(
   filename: string,
-  columns: { key: string; label: string }[],
-  rows: Record<string, unknown>[],
+  columns: { key: keyof T & string; label: string }[],
+  rows: T[],
 ) => {
   const escape = (v: unknown) => {
     const s = v == null ? '' : String(v)
